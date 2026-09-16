@@ -1,13 +1,192 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Search, MapPin, MessageCircle, Star, ShieldCheck, Clock,
   CreditCard, QrCode, CheckCircle2, ChevronLeft, Send,
-  ChevronRight, Filter, Zap, Heart, X, ArrowRight
+  ChevronRight, Filter, Zap, Heart, X, ArrowRight,
+  PhoneCall, Award, UserCheck, HelpCircle, ChevronDown,
+  Calendar, Check, AlertCircle, Info, Sparkles, Volume2,
+  Lock, ThumbsUp, Activity, FileText
 } from 'lucide-react';
 import { professionalsData } from './mock/professionals';
 
 /* ════════════════════════════════════════════
-   APP PRINCIPAL
+   UTILITÁRIOS & COMPONENTES COMPARTILHADOS
+   ════════════════════════════════════════════ */
+
+// Avatar com tratamento automático de erro de imagem
+function ProfessionalAvatar({ src, name, size = 56, className = '', rounded = 'rounded-2xl' }) {
+  const [hasError, setHasError] = useState(!src);
+  const initials = useMemo(() => {
+    if (!name) return 'CC';
+    const parts = name.replace(/^(Dr\.|Dra\.|Enfª\.|Téc\.)\s*/i, '').trim().split(' ');
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }, [name]);
+
+  if (hasError) {
+    return (
+      <div
+        className={`flex items-center justify-center font-bold text-white shadow-md select-none shrink-0 ${rounded} ${className}`}
+        style={{
+          width: size,
+          height: size,
+          background: 'linear-gradient(135deg, #1E3A8A, #0284C7)',
+          fontSize: size * 0.38,
+          border: '2px solid rgba(0, 212, 255, 0.4)',
+        }}
+      >
+        {initials}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={name}
+      onError={() => setHasError(true)}
+      className={`object-cover shrink-0 ${rounded} ${className}`}
+      style={{
+        width: size,
+        height: size,
+        border: '2px solid rgba(51, 65, 85, 0.6)',
+      }}
+    />
+  );
+}
+
+// Controle Aprimorado de Tamanho de Fonte (Acessibilidade)
+function AccessibilityControl({ fontScale, setFontScale }) {
+  const increase = () => setFontScale(prev => Math.min(1.35, +(prev + 0.1).toFixed(2)));
+  const decrease = () => setFontScale(prev => Math.max(0.9, +(prev - 0.1).toFixed(2)));
+  const reset = () => setFontScale(1);
+
+  const percentage = Math.round(fontScale * 100);
+
+  return (
+    <div
+      className="flex items-center gap-1.5 p-1 rounded-xl"
+      style={{
+        background: 'rgba(17, 24, 39, 0.85)',
+        border: '1px solid rgba(0, 212, 255, 0.25)',
+        backdropFilter: 'blur(8px)',
+      }}
+      title="Acessibilidade: Ajuste o tamanho da letra do site"
+    >
+      <button
+        onClick={decrease}
+        disabled={fontScale <= 0.9}
+        className="w-7 h-7 flex items-center justify-center rounded-lg transition-all text-xs font-bold"
+        style={{
+          background: fontScale <= 0.9 ? 'transparent' : 'rgba(30, 41, 59, 0.8)',
+          color: fontScale <= 0.9 ? 'var(--text-muted)' : 'var(--text-primary)',
+          cursor: fontScale <= 0.9 ? 'not-allowed' : 'pointer',
+          border: '1px solid var(--border)',
+        }}
+        aria-label="Diminuir tamanho da fonte"
+      >
+        A-
+      </button>
+
+      <button
+        onClick={reset}
+        className="px-2 h-7 flex items-center justify-center rounded-lg transition-all text-xs font-semibold gap-1"
+        style={{
+          background: fontScale !== 1 ? 'rgba(0, 212, 255, 0.15)' : 'transparent',
+          color: fontScale !== 1 ? 'var(--accent)' : 'var(--text-secondary)',
+          cursor: 'pointer',
+          border: fontScale !== 1 ? '1px solid rgba(0, 212, 255, 0.3)' : '1px solid transparent',
+        }}
+        title="Clique para voltar ao tamanho padrão (100%)"
+      >
+        <span className="hidden sm:inline text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Fonte:</span>
+        <span className="font-bold">{percentage}%</span>
+      </button>
+
+      <button
+        onClick={increase}
+        disabled={fontScale >= 1.35}
+        className="w-7 h-7 flex items-center justify-center rounded-lg transition-all text-xs font-bold"
+        style={{
+          background: fontScale >= 1.35 ? 'transparent' : 'linear-gradient(135deg, #2563EB, #00D4FF)',
+          color: fontScale >= 1.35 ? 'var(--text-muted)' : 'white',
+          cursor: fontScale >= 1.35 ? 'not-allowed' : 'pointer',
+          border: fontScale >= 1.35 ? '1px solid var(--border)' : 'none',
+          boxShadow: fontScale < 1.35 ? '0 0 10px rgba(0, 212, 255, 0.3)' : 'none',
+        }}
+        aria-label="Aumentar tamanho da fonte"
+      >
+        A+
+      </button>
+    </div>
+  );
+}
+
+// Botão de voltar padronizado
+function BackButton({ onClick, label = 'Voltar' }) {
+  return (
+    <button
+      onClick={onClick}
+      className="inline-flex items-center gap-2 py-2 px-3 mb-4 rounded-lg transition-all text-sm font-medium"
+      style={{
+        background: 'rgba(30, 41, 59, 0.4)',
+        border: '1px solid var(--border)',
+        color: 'var(--text-secondary)',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.color = 'var(--accent)';
+        e.currentTarget.style.borderColor = 'var(--border-accent)';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.color = 'var(--text-secondary)';
+        e.currentTarget.style.borderColor = 'var(--border)';
+      }}
+    >
+      <ChevronLeft size={16} />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+// Estrelas de Avaliação
+function StarRating({ rating, size = 14, showValue = false }) {
+  return (
+    <div className="flex items-center gap-1">
+      <div className="flex gap-0.5">
+        {[1, 2, 3, 4, 5].map(i => (
+          <Star
+            key={i}
+            size={size}
+            fill={i <= Math.round(rating) ? '#FBBF24' : 'transparent'}
+            color={i <= Math.round(rating) ? '#FBBF24' : '#475569'}
+            strokeWidth={1.5}
+          />
+        ))}
+      </div>
+      {showValue && (
+        <span className="text-xs font-bold text-amber-400 ml-1">
+          {Number(rating).toFixed(1)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Título de Seção
+function SectionTitle({ children, subtitle }) {
+  return (
+    <div className="mb-4">
+      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 pb-2 border-b border-slate-800 flex items-center justify-between">
+        <span>{children}</span>
+      </h3>
+      {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════
+   APLICAÇÃO PRINCIPAL (APP)
    ════════════════════════════════════════════ */
 
 export default function App() {
@@ -20,12 +199,23 @@ export default function App() {
     }
   }, [fontScale]);
 
-  const cycleFontSize = () =>
-    setFontScale(prev => (prev >= 1.3 ? 1 : +(prev + 0.15).toFixed(2)));
-
   const [screen, setScreen] = useState('home');
   const [selectedPro, setSelectedPro] = useState(null);
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState([
+    {
+      id: 101,
+      professional: professionalsData[0],
+      date: '2026-09-17',
+      startTime: '08:00',
+      endTime: '14:00',
+      durationHours: 6,
+      address: 'Rua Bela Cintra, 1420 - Jardins, São Paulo',
+      need: 'Acompanhamento pós-cirúrgico de quadril e medicação endovenosa.',
+      totalValue: 510,
+      paymentMethod: 'pix',
+      status: 'Confirmado'
+    }
+  ]);
   const [chatOrder, setChatOrder] = useState(null);
   const [finalizeOrder, setFinalizeOrder] = useState(null);
 
@@ -35,60 +225,119 @@ export default function App() {
   };
 
   return (
-    <div ref={rootRef} className="min-h-screen bg-grid" style={{ background: 'var(--bg-primary)' }}>
+    <div ref={rootRef} className="min-h-screen bg-grid flex flex-col" style={{ background: 'var(--bg-primary)' }}>
 
-      {/* ── HEADER ── */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(6, 10, 19, 0.85)',
-        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: '1px solid var(--border)',
-      }}>
-        <div style={{
-          maxWidth: 480, margin: '0 auto',
-          padding: '14px 20px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg, #2563EB, #00D4FF)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 16px rgba(0, 212, 255, 0.25)',
-            }}>
-              <HeartPulseIcon style={{ width: 20, height: 20, color: 'white' }} />
+      {/* ── HEADER RESPONSIVO (DESKTOP + MOBILE) ── */}
+      <header
+        className="sticky top-0 z-50 w-full border-b transition-all"
+        style={{
+          background: 'rgba(6, 10, 19, 0.92)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderColor: 'var(--border)',
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between py-3">
+
+          {/* Logo & Marca */}
+          <div
+            onClick={() => nav('home')}
+            className="flex items-center gap-3 cursor-pointer group select-none"
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, #2563EB, #00D4FF)',
+                boxShadow: '0 0 20px rgba(0, 212, 255, 0.3)',
+              }}
+            >
+              <HeartPulseIcon className="w-5 h-5 text-white" />
             </div>
-            <span style={{
-              fontWeight: 800, fontSize: '1.15rem',
-              background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              letterSpacing: '-0.03em',
-            }}>
-              CuidaCasa
-            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span
+                  className="font-extrabold text-xl tracking-tight"
+                  style={{
+                    background: 'linear-gradient(135deg, #FFFFFF 20%, #00D4FF 80%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  CuidaCasa
+                </span>
+                <span
+                  className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full"
+                  style={{
+                    background: 'rgba(0, 212, 255, 0.12)',
+                    color: 'var(--accent)',
+                    border: '1px solid rgba(0, 212, 255, 0.25)',
+                  }}
+                >
+                  Saúde Domiciliar
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 hidden sm:block">
+                Profissionais de Saúde Verificados pelo COREN & CREFITO
+              </p>
+            </div>
           </div>
 
-          <button
-            onClick={cycleFontSize}
-            style={{
-              width: 40, height: 40, borderRadius: 10,
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              color: fontScale > 1 ? 'var(--accent)' : 'var(--text-secondary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'all 0.25s',
-              fontSize: '0.8rem', fontWeight: 700,
-            }}
-            title={`Fonte: ${Math.round(fontScale * 100)}%`}
-            aria-label="Aumentar tamanho da fonte"
-          >
-            A+
-          </button>
+          {/* Navegação Desktop (Escondida em telas de celular) */}
+          <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 p-1.5 rounded-2xl border border-slate-800">
+            <button
+              onClick={() => nav('home')}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+                screen === 'home'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <Search size={15} />
+              Buscar Profissionais
+            </button>
+
+            <button
+              onClick={() => nav('orders')}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 relative ${
+                screen === 'orders' || screen === 'chat' || screen === 'finalize'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <Clock size={15} />
+              Meus Pedidos
+              {orders.filter(o => o.status === 'Confirmado').length > 0 && (
+                <span className="w-5 h-5 rounded-full bg-cyan-400 text-slate-950 font-bold text-[10px] flex items-center justify-center shadow-sm">
+                  {orders.filter(o => o.status === 'Confirmado').length}
+                </span>
+              )}
+            </button>
+          </nav>
+
+          {/* Ferramentas do Topo: Acessibilidade & Suporte */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <AccessibilityControl fontScale={fontScale} setFontScale={setFontScale} />
+
+            <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-800">
+              <a
+                href="#ajuda"
+                onClick={(e) => {
+                  e.preventDefault();
+                  alert("Central CuidaCasa 24h: Ligue 0800 882 2424 ou fale conosco pelo WhatsApp disponível no rodapé.");
+                }}
+                className="flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-cyan-400 transition-colors px-2 py-1"
+              >
+                <PhoneCall size={14} className="text-cyan-400" />
+                <span>Plantão 24h</span>
+              </a>
+            </div>
+          </div>
+
         </div>
       </header>
 
-      {/* ── CONTEÚDO ── */}
-      <main style={{ maxWidth: 480, margin: '0 auto', padding: '20px 20px 100px' }}>
+      {/* ── CONTEÚDO PRINCIPAL COM CONTAINER RESPONSIVO ── */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-12">
         {screen === 'home' && (
           <HomeScreen
             professionals={professionalsData}
@@ -117,6 +366,7 @@ export default function App() {
             orders={orders}
             onChat={(o) => { setChatOrder(o); nav('chat'); }}
             onFinalize={(o) => { setFinalizeOrder(o); nav('finalize'); }}
+            onNewSearch={() => nav('home')}
           />
         )}
         {screen === 'chat' && (
@@ -134,56 +384,130 @@ export default function App() {
         )}
       </main>
 
-      {/* ── BOTTOM NAV ── */}
-      <nav style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-        background: 'rgba(6, 10, 19, 0.92)',
-        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        borderTop: '1px solid var(--border)',
-      }}>
-        <div style={{
-          maxWidth: 480, margin: '0 auto',
-          display: 'flex', justifyContent: 'space-around',
-          padding: '8px 0 max(8px, env(safe-area-inset-bottom))',
-        }}>
-          <NavBtn icon={<Search size={22} />} label="Buscar" active={screen === 'home'} onClick={() => nav('home')} />
-          <NavBtn icon={<Clock size={22} />} label="Pedidos" active={screen === 'orders'} onClick={() => nav('orders')} badge={orders.filter(o => o.status === 'Confirmado').length || null} />
+      {/* ── RODAPÉ INSTITUCIONAL RICO (DESKTOP + MOBILE) ── */}
+      <footer className="w-full bg-slate-950/80 border-t border-slate-800/80 py-10 px-4 sm:px-6 lg:px-8 text-xs text-slate-400 mt-auto">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+                <HeartPulseIcon className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold text-white text-base">CuidaCasa</span>
+            </div>
+            <p className="text-slate-400 leading-relaxed text-xs">
+              A plataforma líder em intermediação de cuidados domiciliares seguros, com verificação de antecedentes e suporte técnico 24 horas por dia.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Segurança & Garantias</h4>
+            <ul className="space-y-2">
+              <li className="flex items-center gap-2">
+                <ShieldCheck size={14} className="text-cyan-400 shrink-0" />
+                <span>Profissionais com COREN/CREFITO checados</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Lock size={14} className="text-cyan-400 shrink-0" />
+                <span>Pagamento retido com liberação segura</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 size={14} className="text-cyan-400 shrink-0" />
+                <span>Antecedentes criminais validados</span>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Especialidades</h4>
+            <ul className="space-y-1.5 text-slate-400">
+              <li>Enfermagem Padrão (Pós-Operatório & Curativos)</li>
+              <li>Técnicos de Enfermagem (Plantões & Medicação)</li>
+              <li>Fisioterapia Domiciliar & Respiratória</li>
+              <li>Cuidadores de Idosos com foco em Alzheimer</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Atendimento às Famílias</h4>
+            <p className="mb-2">Dúvidas ou auxílio com agendamento?</p>
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <p className="font-bold text-white flex items-center gap-1.5">
+                <PhoneCall size={14} className="text-cyan-400" />
+                0800 882 2424 (Gratuito)
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1">Segunda a Domingo, plantão 24 horas.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto pt-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400">
+          <p>© {new Date().getFullYear()} CuidaCasa Serviços de Saúde Domiciliar Ltda. Todos os direitos reservados.</p>
+          <div className="flex items-center gap-4 text-[11px]">
+            <span>Termos de Uso</span>
+            <span>•</span>
+            <span>Política de Privacidade & LGPD</span>
+            <span>•</span>
+            <span className="text-cyan-400">Ambiente 100% Criptografado</span>
+          </div>
+        </div>
+      </footer>
+
+      {/* ── NAVEGAÇÃO INFERIOR APENAS PARA MOBILE (< 768px) ── */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t"
+        style={{
+          background: 'rgba(6, 10, 19, 0.94)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderColor: 'var(--border)',
+        }}
+      >
+        <div className="flex justify-around items-center py-2 px-3 pb-[max(8px,env(safe-area-inset-bottom))]">
+          <NavBtn
+            icon={<Search size={22} />}
+            label="Buscar"
+            active={screen === 'home'}
+            onClick={() => nav('home')}
+          />
+          <NavBtn
+            icon={<Clock size={22} />}
+            label="Meus Pedidos"
+            active={screen === 'orders' || screen === 'chat' || screen === 'finalize'}
+            onClick={() => nav('orders')}
+            badge={orders.filter(o => o.status === 'Confirmado').length || null}
+          />
         </div>
       </nav>
+
     </div>
   );
 }
 
-/* ════════════════════════════════════════════
-   COMPONENTES AUXILIARES
-   ════════════════════════════════════════════ */
-
 function NavBtn({ icon, label, active, onClick, badge }) {
   return (
-    <button onClick={onClick} style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      gap: 2, padding: '6px 20px', border: 'none', background: 'transparent',
-      color: active ? 'var(--accent)' : 'var(--text-muted)',
-      cursor: 'pointer', transition: 'color 0.2s', position: 'relative',
-    }}>
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center justify-center relative py-1 px-5 transition-colors cursor-pointer border-none bg-transparent"
+      style={{
+        color: active ? 'var(--accent)' : 'var(--text-muted)',
+      }}
+    >
       {badge && (
-        <span style={{
-          position: 'absolute', top: 2, right: 14,
-          width: 18, height: 18, borderRadius: '50%',
-          background: 'var(--danger)', color: 'white',
-          fontSize: '0.6rem', fontWeight: 700,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>{badge}</span>
+        <span
+          className="absolute top-0 right-4 w-4 h-4 rounded-full flex items-center justify-center font-bold text-[9px] text-white"
+          style={{ background: 'var(--danger)' }}
+        >
+          {badge}
+        </span>
       )}
       {icon}
-      <span style={{
-        fontSize: '0.6rem', fontWeight: 600, textTransform: 'uppercase',
-        letterSpacing: '0.08em',
-      }}>{label}</span>
-      {active && <span style={{
-        width: 20, height: 3, borderRadius: 2,
-        background: 'var(--accent)', marginTop: 2,
-      }} />}
+      <span className="text-[10px] font-semibold mt-1 tracking-tight">{label}</span>
+      {active && (
+        <span
+          className="w-4 h-0.5 rounded-full mt-0.5"
+          style={{ background: 'var(--accent)' }}
+        />
+      )}
     </button>
   );
 }
@@ -197,213 +521,489 @@ function HeartPulseIcon(props) {
   );
 }
 
-function BackButton({ onClick, label = 'Voltar' }) {
-  return (
-    <button onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: 6,
-      background: 'none', border: 'none', color: 'var(--text-secondary)',
-      cursor: 'pointer', padding: '8px 0', marginBottom: 16,
-      fontSize: '0.875rem', fontWeight: 500, transition: 'color 0.2s',
-    }}
-    onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-    >
-      <ChevronLeft size={18} /> {label}
-    </button>
-  );
-}
-
-function StarRating({ rating, size = 14 }) {
-  return (
-    <div style={{ display: 'flex', gap: 2 }}>
-      {[1,2,3,4,5].map(i => (
-        <Star key={i} size={size}
-          fill={i <= rating ? '#FBBF24' : 'transparent'}
-          color={i <= rating ? '#FBBF24' : '#475569'}
-          strokeWidth={1.5}
-        />
-      ))}
-    </div>
-  );
-}
-
-function SectionTitle({ children }) {
-  return (
-    <h3 style={{
-      fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
-      letterSpacing: '0.1em', color: 'var(--text-muted)',
-      marginBottom: 12, paddingBottom: 8,
-      borderBottom: '1px solid var(--border)',
-    }}>{children}</h3>
-  );
-}
-
 /* ════════════════════════════════════════════
-   TELA 1 — HOME / BUSCA
+   TELA 1 — HOME / BUSCA & INFORMAÇÕES
    ════════════════════════════════════════════ */
 
 function HomeScreen({ professionals, onSelect }) {
   const [search, setSearch] = useState('');
+  const [selectedSpecialty, setSelectedSpecialty] = useState('Todas');
   const [distance, setDistance] = useState('');
   const [availableOnly, setAvailableOnly] = useState(false);
 
+  const specialties = [
+    'Todas',
+    'Enfermeira',
+    'Técnico de Enfermagem',
+    'Fisioterapeuta',
+    'Cuidador de Idosos'
+  ];
+
   const filtered = professionals.filter(p => {
-    const q = search.toLowerCase();
-    const matchSearch = p.name.toLowerCase().includes(q) || p.specialty.toLowerCase().includes(q);
+    const matchSearch =
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.specialty.toLowerCase().includes(search.toLowerCase()) ||
+      p.areas.some(a => a.toLowerCase().includes(search.toLowerCase()));
+
+    const matchSpec =
+      selectedSpecialty === 'Todas' ||
+      p.specialty.toLowerCase().includes(selectedSpecialty.toLowerCase());
+
     const matchDist = !distance || parseFloat(p.distance) <= parseFloat(distance);
     const matchAvail = !availableOnly || p.available;
-    return matchSearch && matchDist && matchAvail;
+
+    return matchSearch && matchSpec && matchDist && matchAvail;
   });
 
   return (
-    <div className="animate-fade-in-up">
-      {/* Hero section */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: '1.65rem', fontWeight: 800, marginBottom: 6, lineHeight: 1.15 }}>
-          Encontre quem cuida
-          <br />
-          <span style={{
-            background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>
-            da sua família.
-          </span>
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          Profissionais verificados, a poucos cliques de distância.
-        </p>
-      </div>
+    <div className="animate-fade-in space-y-10">
 
-      {/* Search Bar */}
-      <div style={{ position: 'relative', marginBottom: 12 }}>
-        <Search size={18} style={{
-          position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-          color: 'var(--text-muted)',
-        }} />
-        <input
-          type="text" placeholder="Buscar por especialidade ou nome..."
-          value={search} onChange={e => setSearch(e.target.value)}
-          className="input-field"
-          style={{ paddingLeft: 42, background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)' }}
+      {/* ── HERO BANNER INSTITUCIONAL (DESIGN ELEGANTE PARA DESKTOP & MOBILE) ── */}
+      <section
+        className="rounded-3xl p-6 sm:p-10 relative overflow-hidden border"
+        style={{
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(17, 24, 39, 0.98) 100%)',
+          borderColor: 'rgba(0, 212, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        }}
+      >
+        <div
+          className="absolute -top-24 -right-24 w-96 h-96 rounded-full blur-3xl pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%)' }}
         />
-      </div>
+        <div
+          className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full blur-3xl pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, transparent 70%)' }}
+        />
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
-        <select
-          value={distance} onChange={e => setDistance(e.target.value)}
-          className="select-field"
-          style={{ flex: 1, background: 'var(--bg-card)', borderRadius: 'var(--radius-md)' }}
-        >
-          <option value="">Distância: Todas</option>
-          <option value="3">Até 3 km</option>
-          <option value="5">Até 5 km</option>
-          <option value="10">Até 10 km</option>
-        </select>
-        <button
-          onClick={() => setAvailableOnly(!availableOnly)}
+        <div className="relative z-10 max-w-3xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4 bg-cyan-950/60 border border-cyan-500/30 text-cyan-300">
+            <Sparkles size={14} className="text-cyan-400" />
+            <span>Assistência Domiciliar Segura & Humanizada</span>
+          </div>
+
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight mb-4">
+            Cuidado profissional para quem você ama, no conforto do lar.
+          </h1>
+
+          <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
+            Conectamos sua família aos melhores <strong>enfermeiros, técnicos de enfermagem e fisioterapeutas</strong> da sua região. Todos com registro verificado no COREN/CREFITO e antecedentes checados.
+          </p>
+
+          {/* Destaques de Confiança */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-800">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-cyan-400 shrink-0" />
+              <span className="text-xs text-slate-300 font-medium">100% Verificados</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-cyan-400 shrink-0" />
+              <span className="text-xs text-slate-300 font-medium">Atendimento Imediato</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-cyan-400 shrink-0" />
+              <span className="text-xs text-slate-300 font-medium">Pagamento Protegido</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-amber-400 shrink-0" />
+              <span className="text-xs text-slate-300 font-medium">Nota 4.9 pelas Famílias</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── BARRA DE BUSCA & FILTROS (ESPAÇOSO EM DESKTOP) ── */}
+      <section className="space-y-4">
+        <div
+          className="p-4 sm:p-5 rounded-2xl border"
           style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '10px 14px', borderRadius: 'var(--radius-md)',
-            border: `1px solid ${availableOnly ? 'var(--accent)' : 'var(--border)'}`,
-            background: availableOnly ? 'var(--accent-glow)' : 'var(--bg-card)',
-            color: availableOnly ? 'var(--accent)' : 'var(--text-secondary)',
-            cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600,
-            transition: 'all 0.25s', whiteSpace: 'nowrap',
+            background: 'var(--bg-card)',
+            borderColor: 'var(--border)',
           }}
         >
-          <Zap size={14} /> Agora
-        </button>
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+            {/* Campo de Busca */}
+            <div className="md:col-span-6 relative">
+              <Search
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              />
+              <input
+                type="text"
+                placeholder="Busque por nome, especialidade ou procedimento..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="input-field pl-10"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
 
-      {/* Results */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {filtered.length > 0 ? (
-          filtered.map((p, idx) => (
-            <div key={p.id}
-              className={`glass-card animate-fade-in-up stagger-${idx + 1}`}
-              style={{ cursor: 'pointer', overflow: 'hidden' }}
-              onClick={() => onSelect(p)}
+            {/* Filtro de Distância */}
+            <div className="md:col-span-3">
+              <select
+                value={distance}
+                onChange={e => setDistance(e.target.value)}
+                className="select-field"
+              >
+                <option value="">Qualquer distância</option>
+                <option value="2">Até 2 km de você</option>
+                <option value="5">Até 5 km de você</option>
+                <option value="10">Até 10 km de você</option>
+              </select>
+            </div>
+
+            {/* Switch de Disponibilidade Imediata */}
+            <div className="md:col-span-3 flex items-center">
+              <button
+                type="button"
+                onClick={() => setAvailableOnly(!availableOnly)}
+                className={`w-full h-full min-h-[46px] px-4 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                  availableOnly
+                    ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-400 shadow-sm'
+                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <Zap size={14} className={availableOnly ? 'text-emerald-400' : 'text-slate-500'} />
+                <span>Disponível Agora</span>
+                {availableOnly && <Check size={14} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Chips de Especialidades */}
+          <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-800/80 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-xs text-slate-400 font-medium shrink-0 mr-1 hidden sm:inline">Filtrar por:</span>
+            {specialties.map(spec => (
+              <button
+                key={spec}
+                onClick={() => setSelectedSpecialty(spec)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+                  selectedSpecialty === spec
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50'
+                    : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200'
+                }`}
+              >
+                {spec}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Resumo da busca */}
+        <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+          <span>Mostrando <strong>{filtered.length}</strong> profissionais qualificados</span>
+          {(search || distance || availableOnly || selectedSpecialty !== 'Todas') && (
+            <button
+              onClick={() => {
+                setSearch('');
+                setDistance('');
+                setAvailableOnly(false);
+                setSelectedSpecialty('Todas');
+              }}
+              className="text-cyan-400 hover:underline flex items-center gap-1"
             >
-              <div style={{ padding: 18, display: 'flex', gap: 16 }}>
-                {/* Avatar */}
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <img src={p.image} alt={p.name} style={{
-                    width: 72, height: 72, borderRadius: 'var(--radius-md)',
-                    objectFit: 'cover',
-                    border: '2px solid var(--border)',
-                  }} />
-                  {p.available && (
-                    <div style={{
-                      position: 'absolute', bottom: -3, right: -3,
-                      width: 16, height: 16, borderRadius: '50%',
-                      background: 'var(--success)',
-                      border: '3px solid var(--bg-card)',
-                      boxShadow: '0 0 8px var(--success-glow)',
-                    }} />
-                  )}
+              <X size={12} /> Limpar filtros
+            </button>
+          )}
+        </div>
+      </section>
+
+      {/* ── GRID DE PROFISSIONAIS (1 COL NO CELULAR, 2-3 COLUNAS NO PC/NOTEBOOK) ── */}
+      <section>
+        {filtered.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((p, idx) => (
+              <div
+                key={p.id}
+                onClick={() => onSelect(p)}
+                className={`glass-card cursor-pointer group flex flex-col justify-between p-5 rounded-2xl relative transition-all duration-300 hover:-translate-y-1 stagger-${(idx % 4) + 1}`}
+              >
+                <div>
+                  {/* Topo do card: Avatar + Status + Rating */}
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="relative">
+                      <ProfessionalAvatar
+                        src={p.avatar || p.image}
+                        name={p.name}
+                        size={64}
+                        rounded="rounded-2xl"
+                      />
+                      {p.available && (
+                        <span
+                          className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 bg-emerald-500 shadow-sm"
+                          title="Disponível para atendimento imediato"
+                        />
+                      )}
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold">
+                        <Star size={12} fill="#FBBF24" color="#FBBF24" />
+                        <span>{Number(p.rating).toFixed(1)}</span>
+                        <span className="text-[10px] text-slate-400">({p.reviews.length})</span>
+                      </div>
+
+                      <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                        <MapPin size={11} /> {p.distance} km de você
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Informações Principais */}
+                  <div className="mb-3">
+                    <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">
+                      {p.name}
+                    </h3>
+                    <p className="text-xs font-semibold text-cyan-400 mb-1">
+                      {p.specialty}
+                    </p>
+                    <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                      <Award size={12} className="text-slate-400" />
+                      <span>{p.council || 'Conselho Verificado'}</span>
+                    </p>
+                  </div>
+
+                  {/* Badges de Destaque */}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {p.isVerified && (
+                      <span className="badge badge-verified">
+                        <ShieldCheck size={11} /> Verificado
+                      </span>
+                    )}
+                    <span className="badge" style={{ background: 'rgba(30, 41, 59, 0.6)', color: 'var(--text-secondary)' }}>
+                      <Clock size={11} /> {p.experience}
+                    </span>
+                    {p.available && (
+                      <span className="badge badge-available">
+                        <Zap size={11} /> Plantão Hoje
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Áreas de Atuação (Tags) */}
+                  <div className="space-y-1 mb-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Principais Cuidados:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {p.areas.slice(0, 3).map((area, i) => (
+                        <span
+                          key={i}
+                          className="text-[11px] px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 border border-slate-700/60 truncate max-w-[200px]"
+                        >
+                          {area}
+                        </span>
+                      ))}
+                      {p.areas.length > 3 && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md text-slate-400 font-semibold">
+                          +{p.areas.length - 3} mais
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{p.name}</h3>
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      background: 'rgba(251, 191, 36, 0.1)',
-                      border: '1px solid rgba(251, 191, 36, 0.2)',
-                      padding: '3px 8px', borderRadius: 'var(--radius-full)',
-                      fontSize: '0.75rem', fontWeight: 700, color: '#FBBF24',
-                    }}>
-                      <Star size={11} fill="#FBBF24" color="#FBBF24" /> {p.rating}
-                    </div>
-                  </div>
-
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', margin: '0 0 8px' }}>{p.specialty}</p>
-
-                  {p.isVerified && (
-                    <span className="badge badge-verified" style={{ marginBottom: 10, display: 'inline-flex' }}>
-                      <ShieldCheck size={11} /> Verificado
-                    </span>
-                  )}
-
-                  <div style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-                    paddingTop: 10, borderTop: '1px solid var(--border)',
-                    marginTop: 4,
-                  }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      <MapPin size={12} /> {p.distance} km
-                    </span>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block' }}>a partir de</span>
-                      <span style={{
-                        fontSize: '1.05rem', fontWeight: 800,
+                {/* Rodapé do Card: Preço + Botão de Ação */}
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-between mt-2">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block uppercase font-medium">Valor por hora</span>
+                    <span
+                      className="text-lg font-black tracking-tight"
+                      style={{
                         background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
-                        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                      }}>R$ {p.hourlyRate}<span style={{ fontSize: '0.7rem', fontWeight: 500 }}>/h</span></span>
-                    </div>
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                      }}
+                    >
+                      R$ {p.hourlyRate}
+                      <span className="text-xs text-slate-400 font-medium">/h</span>
+                    </span>
                   </div>
+
+                  <button
+                    type="button"
+                    className="btn-primary text-xs py-2 px-3.5 rounded-xl group-hover:shadow-cyan-500/25"
+                  >
+                    <span>Ver Perfil</span>
+                    <ArrowRight size={14} />
+                  </button>
                 </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         ) : (
-          <div className="glass-card-static" style={{
-            padding: '48px 24px', textAlign: 'center',
-            border: '1px dashed var(--border)',
-          }}>
-            <Search size={32} style={{ color: 'var(--text-muted)', opacity: 0.4, margin: '0 auto 12px' }} />
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Nenhum profissional encontrado.</p>
+          <div className="glass-card-static text-center py-16 px-4 rounded-2xl border border-dashed border-slate-800">
+            <Search size={36} className="text-slate-600 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-white mb-1">Nenhum profissional encontrado</h3>
+            <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">
+              Não localizamos profissionais com esses filtros no momento. Tente expandir o raio de distância ou escolher outra especialidade.
+            </p>
+            <button
+              onClick={() => {
+                setSearch('');
+                setDistance('');
+                setAvailableOnly(false);
+                setSelectedSpecialty('Todas');
+              }}
+              className="btn-secondary text-xs"
+            >
+              Restaurar busca padrão
+            </button>
           </div>
         )}
+      </section>
+
+      {/* ── SEÇÃO INFORMATIVA 1: COMO FUNCIONA (PASSO A PASSO) ── */}
+      <section className="p-6 sm:p-10 rounded-3xl bg-slate-900/50 border border-slate-800">
+        <div className="text-center max-w-2xl mx-auto mb-8">
+          <span className="text-xs font-bold uppercase tracking-widest text-cyan-400">Processo Transparente</span>
+          <h2 className="text-xl sm:text-3xl font-extrabold text-white mt-1">Como funciona o CuidaCasa</h2>
+          <p className="text-xs sm:text-sm text-slate-400 mt-2">
+            Contratar assistência médica domiciliar nunca foi tão simples, ágil e protegido.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 relative">
+            <div className="w-9 h-9 rounded-xl bg-blue-600/20 text-cyan-400 font-bold flex items-center justify-center text-sm border border-cyan-500/30 mb-4">
+              01
+            </div>
+            <h3 className="text-sm font-bold text-white mb-2">1. Escolha o Especialista</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Consulte credenciais, experiência hospitalar, avaliações de outras famílias e valores por hora.
+            </p>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 relative">
+            <div className="w-9 h-9 rounded-xl bg-blue-600/20 text-cyan-400 font-bold flex items-center justify-center text-sm border border-cyan-500/30 mb-4">
+              02
+            </div>
+            <h3 className="text-sm font-bold text-white mb-2">2. Defina Data e Horário</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Escolha a data do atendimento, o horário de início e de término. O sistema calcula a duração exata.
+            </p>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 relative">
+            <div className="w-9 h-9 rounded-xl bg-blue-600/20 text-cyan-400 font-bold flex items-center justify-center text-sm border border-cyan-500/30 mb-4">
+              03
+            </div>
+            <h3 className="text-sm font-bold text-white mb-2">3. Atendimento no Lar</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              O profissional comparece pontualmente com material esterilizado e conduta pautada pela ética.
+            </p>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 relative">
+            <div className="w-9 h-9 rounded-xl bg-blue-600/20 text-cyan-400 font-bold flex items-center justify-center text-sm border border-cyan-500/30 mb-4">
+              04
+            </div>
+            <h3 className="text-sm font-bold text-white mb-2">4. Pagamento Seguro</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              O dinheiro fica retido e garantido pela plataforma, sendo liberado apenas após a sua confirmação.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SEÇÃO INFORMATIVA 2: PILARES DE SEGURANÇA & RIGOR ── */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
+            <ShieldCheck size={24} className="text-cyan-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white mb-1">Validação nos Conselhos de Classe</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Consultamos ativamente a situação de regularidade no COREN (Enfermagem) e CREFITO (Fisioterapia).
+            </p>
+          </div>
+        </div>
+
+        <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
+            <UserCheck size={24} className="text-cyan-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white mb-1">Checagem Criminal e de Idoneidade</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Certidões de antecedentes criminais das polícias civil e federal checadas antes da aprovação do perfil.
+            </p>
+          </div>
+        </div>
+
+        <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
+            <PhoneCall size={24} className="text-cyan-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white mb-1">Acompanhamento e Suporte 24h</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Equipe de enfermagem de suporte disponível para orientar familiares em qualquer momento do atendimento.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SEÇÃO INFORMATIVA 3: PERGUNTAS FREQUENTES (FAQ) ── */}
+      <section className="p-6 sm:p-8 rounded-3xl bg-slate-900/40 border border-slate-800">
+        <h2 className="text-lg sm:text-2xl font-bold text-white mb-6 text-center">
+          Dúvidas Frequentes das Famílias
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FaqItem
+            question="Como o profissional é verificado pelo CuidaCasa?"
+            answer="Exigimos diploma autenticado, registro ativo no conselho regional (COREN/CREFITO), certidão negativa de antecedentes criminais e realizamos entrevista com equipe técnica de saúde."
+          />
+          <FaqItem
+            question="O que acontece se o profissional não puder comparecer?"
+            answer="Nossa equipe aciona imediatamente outro profissional qualificado da mesma especialidade no mesmo raio de distância ou realiza o reembolso integral de forma instantânea via Pix."
+          />
+          <FaqItem
+            question="Como funciona o pagamento? É seguro?"
+            answer="O pagamento é 100% protegido. O valor fica retido na custódia segura do CuidaCasa e só é transferido ao profissional após você atestar a realização do serviço no aplicativo."
+          />
+          <FaqItem
+            question="Posso contratar atendimento para o mesmo dia?"
+            answer="Sim! Os profissionais marcados com a tag 'Disponível Agora' atendem chamados imediatos em domicílio com chegada estimada a partir de 45 minutos."
+          />
+        </div>
+      </section>
+
+    </div>
+  );
+}
+
+function FaqItem({ question, answer }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      onClick={() => setOpen(!open)}
+      className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition-all"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="text-xs sm:text-sm font-semibold text-white">{question}</h4>
+        <ChevronDown size={16} className={`text-cyan-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </div>
+      {open && (
+        <p className="text-xs text-slate-400 mt-3 pt-3 border-t border-slate-800/80 leading-relaxed">
+          {answer}
+        </p>
+      )}
     </div>
   );
 }
 
 /* ════════════════════════════════════════════
    TELA 2 — PERFIL DO PROFISSIONAL
+   (DESIGN EM 2 COLUNAS NO DESKTOP, SEM NENHUMA
+    SOBREPOSIÇÃO NAS AVALIAÇÕES)
    ════════════════════════════════════════════ */
 
 function ProfileScreen({ professional: p, onBack, onRequest }) {
@@ -411,400 +1011,722 @@ function ProfileScreen({ professional: p, onBack, onRequest }) {
   const avgRating = (p.reviews.reduce((a, r) => a + r.rating, 0) / p.reviews.length).toFixed(1);
 
   return (
-    <div className="animate-slide-right">
-      <BackButton onClick={onBack} />
+    <div className="animate-slide-right pb-36 md:pb-12">
+      <BackButton onClick={onBack} label="Voltar à busca" />
 
-      {/* Header Card */}
-      <div className="glass-card-static" style={{ overflow: 'hidden', marginBottom: 20 }}>
-        {/* Gradient Banner */}
-        <div style={{
-          height: 80,
-          background: 'linear-gradient(135deg, #0B101D 0%, #1E3A5F 50%, #0B101D 100%)',
-          position: 'relative',
-        }}>
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'radial-gradient(ellipse at 50% 0%, rgba(0,212,255,0.12), transparent 70%)',
-          }} />
-        </div>
+      {/* Grid Responsivo: 2 colunas em telas médias/grandes */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-        <div style={{ padding: '0 24px 24px', position: 'relative' }}>
-          {/* Avatar */}
-          <img src={p.image} alt={p.name} style={{
-            width: 88, height: 88, borderRadius: 'var(--radius-lg)',
-            objectFit: 'cover',
-            border: '4px solid var(--bg-card)',
-            marginTop: -44, position: 'relative',
-            boxShadow: 'var(--shadow-lg)',
-          }} />
+        {/* ── COLUNA PRINCIPAL: DETALHES & AVALIAÇÕES (8 COLUNAS NO DESKTOP) ── */}
+        <div className="lg:col-span-8 space-y-6">
 
-          {/* Rating floating */}
-          <div style={{
-            position: 'absolute', top: -20, right: 24,
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'rgba(251, 191, 36, 0.1)',
-            border: '1px solid rgba(251, 191, 36, 0.2)',
-            padding: '8px 14px', borderRadius: 'var(--radius-full)',
-            backdropFilter: 'blur(8px)',
-          }}>
-            <Star size={16} fill="#FBBF24" color="#FBBF24" />
-            <span style={{ fontSize: '1rem', fontWeight: 800, color: '#FBBF24' }}>{avgRating}</span>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({p.reviews.length})</span>
-          </div>
-
-          <div style={{ marginTop: 16 }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 4px' }}>{p.name}</h2>
-            <p style={{
-              fontSize: '0.9375rem', fontWeight: 600, margin: '0 0 12px',
-              color: 'var(--accent)',
-            }}>{p.specialty}</p>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {p.isVerified && (
-                <span className="badge badge-verified">
-                  <ShieldCheck size={11} /> COREN/CREFITO
-                </span>
-              )}
-              <span className="badge" style={{
-                color: 'var(--text-secondary)',
-                background: 'rgba(30, 41, 59, 0.6)',
-                border: '1px solid var(--border)',
-              }}>
-                <Clock size={11} /> {p.experience}
-              </span>
-              {p.available && (
-                <span className="badge badge-available">
-                  <Zap size={11} /> Disponível
-                </span>
-              )}
+          {/* Header Card com Avatar e Dados Principais */}
+          <div className="glass-card-static overflow-hidden rounded-2xl">
+            {/* Banner Decorativo de Fundo */}
+            <div
+              className="h-28 relative"
+              style={{
+                background: 'linear-gradient(135deg, #0B101D 0%, #1E3A5F 50%, #0B101D 100%)',
+              }}
+            >
+              <div
+                className="absolute inset-0"
+                style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,212,255,0.18), transparent 70%)' }}
+              />
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Especialidades */}
-      <div className="glass-card-static animate-fade-in-up stagger-1" style={{ padding: 20, marginBottom: 20 }}>
-        <SectionTitle>Áreas de Atuação</SectionTitle>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {p.areas.map((a, i) => (
-            <span key={i} style={{
-              padding: '8px 14px', borderRadius: 'var(--radius-full)',
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border)',
-              fontSize: '0.8125rem', color: 'var(--text-primary)',
-              fontWeight: 500,
-            }}>{a}</span>
-          ))}
-        </div>
-      </div>
+            <div className="px-6 pb-6 pt-0 relative">
+              {/* Foto do Profissional com Fallback */}
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between -mt-12 mb-4 gap-3">
+                <ProfessionalAvatar
+                  src={p.avatar || p.image}
+                  name={p.name}
+                  size={96}
+                  rounded="rounded-2xl"
+                  className="shadow-2xl border-4 border-slate-900"
+                />
 
-      {/* Avaliações */}
-      <div className="animate-fade-in-up stagger-2" style={{ marginBottom: 100 }}>
-        <SectionTitle>Avaliações das Famílias</SectionTitle>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {p.reviews.map((r, i) => (
-            <div key={i} className="glass-card-static" style={{ padding: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{r.user}</span>
-                <StarRating rating={r.rating} size={12} />
+                <div className="flex items-center gap-2 bg-slate-900/90 border border-amber-500/30 px-3.5 py-1.5 rounded-full backdrop-blur-md self-start sm:self-auto">
+                  <Star size={16} fill="#FBBF24" color="#FBBF24" />
+                  <span className="text-sm font-extrabold text-amber-400">{avgRating}</span>
+                  <span className="text-xs text-slate-400">({p.reviews.length} avaliações)</span>
+                </div>
               </div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', lineHeight: 1.6, margin: 0 }}>
-                "{r.comment}"
-              </p>
+
+              {/* Título & Especialidade */}
+              <div>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-white mb-1">{p.name}</h1>
+                <p className="text-sm font-semibold text-cyan-400 mb-3">{p.specialty}</p>
+
+                {/* Badges de Credenciamento */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {p.isVerified && (
+                    <span className="badge badge-verified">
+                      <ShieldCheck size={12} /> {p.council || 'Conselho Verificado'}
+                    </span>
+                  )}
+                  <span className="badge" style={{ background: 'rgba(30, 41, 59, 0.6)', color: 'var(--text-secondary)' }}>
+                    <Clock size={12} /> {p.experience}
+                  </span>
+                  {p.available && (
+                    <span className="badge badge-available">
+                      <Zap size={12} /> Disponibilidade Imediata
+                    </span>
+                  )}
+                  <span className="badge" style={{ background: 'rgba(30, 41, 59, 0.6)', color: 'var(--text-secondary)' }}>
+                    <MapPin size={12} /> {p.city || `${p.distance} km de você`}
+                  </span>
+                </div>
+
+                {/* Biografia / Sobre o Profissional */}
+                <div className="pt-4 border-t border-slate-800">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Sobre o Profissional</h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    {p.bio || 'Profissional dedicado ao cuidado domiciliar humanizado, com ampla experiência em recuperação clínica e suporte à família.'}
+                  </p>
+                </div>
+              </div>
             </div>
-          ))}
+          </div>
+
+          {/* Procedimentos e Áreas de Atuação */}
+          <div className="glass-card-static p-6 rounded-2xl">
+            <SectionTitle subtitle="Procedimentos habilitados e cuidados especializados inclusos">
+              Procedimentos & Cuidados Realizados
+            </SectionTitle>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-3">
+              {p.areas.map((area, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/70 border border-slate-800 text-xs text-slate-200"
+                >
+                  <CheckCircle2 size={15} className="text-cyan-400 shrink-0" />
+                  <span>{area}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── AVALIAÇÕES DAS FAMÍLIAS (COM ESPAÇO AMPLO, NUNCA COBERTO) ── */}
+          <div className="glass-card-static p-6 rounded-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <SectionTitle subtitle="Opinião real de famílias que já contrataram este profissional">
+                Avaliações de Famílias Atendidas
+              </SectionTitle>
+              <span className="text-xs text-cyan-400 font-semibold">{p.reviews.length} depoimentos</span>
+            </div>
+
+            <div className="space-y-3">
+              {p.reviews.map((r, i) => (
+                <div
+                  key={i}
+                  className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/90 hover:border-slate-700 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-cyan-300">
+                        {r.user.charAt(0)}
+                      </div>
+                      <span className="text-xs sm:text-sm font-semibold text-white">{r.user}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {r.date && <span className="text-[11px] text-slate-400">{r.date}</span>}
+                      <StarRating rating={r.rating} size={12} />
+                    </div>
+                  </div>
+
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed italic pl-9">
+                    "{r.comment}"
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
+
+        {/* ── COLUNA LATERAL: CARD DE RESERVA STICKY EM DESKTOP (4 COLUNAS) ── */}
+        <div className="hidden lg:block lg:col-span-4 sticky top-24">
+          <div
+            className="glass-card-static p-6 rounded-2xl border"
+            style={{ borderColor: 'rgba(0, 212, 255, 0.25)' }}
+          >
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">
+              Investimento
+            </span>
+
+            <div className="flex items-baseline gap-1.5 mb-4">
+              <span
+                className="text-3xl font-black"
+                style={{
+                  background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                R$ {p.hourlyRate}
+              </span>
+              <span className="text-sm text-slate-400 font-semibold">/ por hora</span>
+            </div>
+
+            <div className="space-y-3 mb-6 text-xs text-slate-300 p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <div className="flex items-center justify-between">
+                <span>Disponibilidade:</span>
+                <span className="font-semibold text-emerald-400 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  {p.available ? 'Atendimento Hoje' : 'Agendamento Flexível'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Tempo de Chegada:</span>
+                <span className="font-semibold text-white">~45 min na sua região</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Garantia CuidaCasa:</span>
+                <span className="font-semibold text-cyan-400">100% Protegido</span>
+              </div>
+            </div>
+
+            <button
+              onClick={onRequest}
+              className="btn-primary w-full py-4 text-sm font-bold tracking-wide rounded-xl shadow-lg"
+            >
+              <span>Solicitar Atendimento</span>
+              <ArrowRight size={18} />
+            </button>
+
+            <p className="text-[11px] text-slate-400 text-center mt-3 flex items-center justify-center gap-1.5">
+              <Lock size={12} className="text-cyan-400" />
+              <span>Você só paga após o término do serviço</span>
+            </p>
+          </div>
+        </div>
+
       </div>
 
-      {/* CTA fixo */}
-      <div style={{
-        position: 'fixed', bottom: 60, left: 0, right: 0, zIndex: 45,
-        background: 'rgba(6, 10, 19, 0.95)',
-        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        borderTop: '1px solid var(--border)',
-        padding: '14px 20px',
-      }}>
-        <div style={{ maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 16 }}>
+      {/* ── BARRA FIXA INFERIOR EXCLUSIVA DO CELULAR (MOBILE-ONLY) ── */}
+      {/* Com espaçamento e blur, o padding pb-36 no container garante que nunca fique em cima do texto das avaliações! */}
+      <div
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t"
+        style={{
+          background: 'rgba(6, 10, 19, 0.95)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderColor: 'rgba(0, 212, 255, 0.2)',
+          boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.6)',
+          padding: '12px 16px max(12px, env(safe-area-inset-bottom))',
+        }}
+      >
+        <div className="max-w-md mx-auto flex items-center gap-4">
           <div>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Valor/hora</span>
-            <p style={{
-              fontSize: '1.25rem', fontWeight: 800, margin: 0,
-              background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>R$ {p.hourlyRate}</p>
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block">Valor/hora</span>
+            <span
+              className="text-xl font-extrabold"
+              style={{
+                background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              R$ {p.hourlyRate}
+            </span>
           </div>
-          <button onClick={onRequest} className="btn-primary" style={{ flex: 1, padding: '14px 20px', fontSize: '0.9375rem' }}>
-            Solicitar Atendimento <ArrowRight size={18} />
+
+          <button
+            onClick={onRequest}
+            className="btn-primary flex-1 py-3.5 px-4 text-sm font-bold rounded-xl"
+          >
+            <span>Solicitar Atendimento</span>
+            <ArrowRight size={16} />
           </button>
         </div>
       </div>
+
     </div>
   );
 }
 
 /* ════════════════════════════════════════════
-   TELA 3 — SOLICITAÇÃO + CHECKOUT SIMULADO
+   TELA 3 — SOLICITAÇÃO DE ATENDIMENTO
+   (COM DATA, HORÁRIO DE INÍCIO E FIM, E CÁLCULO
+    EXATO DE HORAS REQUISITADO PELO USUÁRIO)
    ════════════════════════════════════════════ */
 
 function RequestScreen({ professional: p, onBack, onCreated }) {
-  const [date, setDate] = useState('');
-  const [start, setStart] = useState('');
-  const [end, setEnd] = useState('');
-  const [address, setAddress] = useState('');
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const [date, setDate] = useState(todayStr);
+  const [start, setStart] = useState('08:00');
+  const [end, setEnd] = useState('14:00');
+  const [address, setAddress] = useState('Rua Bela Cintra, 1420 - Jardins, São Paulo');
   const [need, setNeed] = useState('');
   const [payment, setPayment] = useState('pix');
   const [loading, setLoading] = useState(false);
 
-  const hours = 4;
-  const total = p ? p.hourlyRate * hours : 0;
+  // Cálculo preciso das horas entre início e fim
+  const calculatedHours = useMemo(() => {
+    if (!start || !end) return 0;
+    const [startH, startM] = start.split(':').map(Number);
+    const [endH, endM] = end.split(':').map(Number);
+
+    let startMinutes = startH * 60 + startM;
+    let endMinutes = endH * 60 + endM;
+
+    // Se o horário de fim for menor que o início, consideramos plantão noturno até o dia seguinte
+    if (endMinutes <= startMinutes) {
+      endMinutes += 24 * 60;
+    }
+
+    const diffMinutes = endMinutes - startMinutes;
+    const diffHours = +(diffMinutes / 60).toFixed(1);
+    return diffHours;
+  }, [start, end]);
+
+  const totalValue = useMemo(() => {
+    if (!p) return 0;
+    return Math.round(calculatedHours * p.hourlyRate);
+  }, [calculatedHours, p]);
 
   const submit = (e) => {
     e.preventDefault();
-    if (!date || !start || !address) return;
+    if (!date || !start || !end || !address) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    if (calculatedHours <= 0) {
+      alert('Por favor, informe um horário de término posterior ao horário de início.');
+      return;
+    }
+
     setLoading(true);
     setTimeout(() => {
-      onCreated({ professional: p, date, startTime: start, endTime: end, address, need, totalValue: total, paymentMethod: payment });
-    }, 1800);
+      onCreated({
+        professional: p,
+        date,
+        startTime: start,
+        endTime: end,
+        durationHours: calculatedHours,
+        address,
+        need,
+        totalValue,
+        paymentMethod: payment,
+      });
+    }, 1200);
   };
 
   return (
-    <div className="animate-slide-right">
+    <div className="animate-slide-right max-w-4xl mx-auto pb-16">
       <BackButton onClick={onBack} label="Voltar ao perfil" />
-      <h1 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 20 }}>Agendar Atendimento</h1>
 
-      {/* Profissional selecionado */}
-      <div className="glass-card-static" style={{
-        padding: 16, marginBottom: 24,
-        display: 'flex', alignItems: 'center', gap: 14,
-        borderLeft: '3px solid var(--accent)',
-      }}>
-        <img src={p?.image} alt="" style={{
-          width: 48, height: 48, borderRadius: 'var(--radius-md)',
-          objectFit: 'cover', border: '2px solid var(--border)',
-        }} />
-        <div>
-          <p style={{ fontWeight: 700, margin: '0 0 2px', fontSize: '0.9375rem' }}>{p?.name}</p>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', margin: 0 }}>{p?.specialty}</p>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Agendar Atendimento Domiciliar</h1>
+        <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          Defina o dia e o período desejado. O profissional saberá exatamente a duração que você precisa.
+        </p>
       </div>
 
       <form onSubmit={submit}>
-        {/* Detalhes */}
-        <div className="glass-card-static" style={{ padding: 20, marginBottom: 20 }}>
-          <SectionTitle>Detalhes do Serviço</SectionTitle>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-            <div>
-              <Label>Data</Label>
-              <input type="date" required value={date} onChange={e => setDate(e.target.value)} className="input-field" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+          {/* ── COLUNA ESQUERDA: FORMULÁRIO COMPLETO (7 COLUNAS) ── */}
+          <div className="lg:col-span-7 space-y-6">
+
+            {/* Profissional Selecionado */}
+            <div className="glass-card-static p-4 rounded-2xl flex items-center gap-4 border-l-4 border-l-cyan-400">
+              <ProfessionalAvatar
+                src={p?.avatar || p?.image}
+                name={p?.name}
+                size={52}
+                rounded="rounded-xl"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white truncate">{p?.name}</p>
+                <p className="text-xs text-cyan-400 truncate">{p?.specialty}</p>
+                <p className="text-[11px] text-slate-400">{p?.council}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-[10px] text-slate-400 block uppercase">Taxa</span>
+                <span className="text-sm font-bold text-white">R$ {p?.hourlyRate}/h</span>
+              </div>
             </div>
-            <div>
-              <Label>Horário</Label>
-              <input type="time" required value={start} onChange={e => setStart(e.target.value)} className="input-field" />
+
+            {/* Período do Atendimento (Data, Início e Fim) */}
+            <div className="glass-card-static p-6 rounded-2xl space-y-4">
+              <SectionTitle subtitle="Informe o dia e a janela exata de horas necessárias">
+                Data e Horário do Atendimento
+              </SectionTitle>
+
+              {/* Campo Data */}
+              <div>
+                <Label required>Data do Atendimento</Label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    required
+                    min={todayStr}
+                    value={date}
+                    onChange={e => setDate(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+                {date === todayStr && (
+                  <p className="text-[11px] text-emerald-400 font-semibold mt-1 flex items-center gap-1">
+                    <Zap size={12} /> Solicitação com atendimento imediato para hoje!
+                  </p>
+                )}
+              </div>
+
+              {/* Grid de Horário de Início e Término */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label required>Horário de Início</Label>
+                  <input
+                    type="time"
+                    required
+                    value={start}
+                    onChange={e => setStart(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+
+                <div>
+                  <Label required>Horário de Término</Label>
+                  <input
+                    type="time"
+                    required
+                    value={end}
+                    onChange={e => setEnd(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+
+              {/* Box de Resumo da Duração Calculada */}
+              <div
+                className="p-3.5 rounded-xl border flex items-center justify-between gap-3"
+                style={{
+                  background: 'rgba(0, 212, 255, 0.08)',
+                  borderColor: 'rgba(0, 212, 255, 0.25)',
+                }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Clock size={18} className="text-cyan-400 shrink-0" />
+                  <div>
+                    <span className="text-xs font-bold text-white block">
+                      Duração Total Calculada: {calculatedHours} {calculatedHours === 1 ? 'hora' : 'horas'}
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Das {start} às {end} ({date})
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-xs font-bold text-cyan-400 block">
+                    {calculatedHours}h × R$ {p?.hourlyRate}
+                  </span>
+                </div>
+              </div>
             </div>
+
+            {/* Endereço e Necessidades */}
+            <div className="glass-card-static p-6 rounded-2xl space-y-4">
+              <SectionTitle subtitle="Onde o profissional deve comparecer e orientações iniciais">
+                Localização & Detalhes Clínicos
+              </SectionTitle>
+
+              <div>
+                <Label required>Endereço Completo</Label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Rua / Avenida, Número, Complemento, Bairro e Cidade"
+                  value={address}
+                  onChange={e => setAddress(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+
+              <div>
+                <Label>Orientações ou Necessidades Especiais (Opcional)</Label>
+                <textarea
+                  placeholder="Ex: Paciente acamado com cirurgia recente no joelho, necessita de curativo diário e auxílio na locomoção."
+                  value={need}
+                  onChange={e => setNeed(e.target.value)}
+                  rows={3}
+                  className="input-field resize-none leading-relaxed"
+                />
+              </div>
+            </div>
+
           </div>
-          <div style={{ marginBottom: 12 }}>
-            <Label>Endereço Completo</Label>
-            <input type="text" required placeholder="Rua, Nº, Bairro, Cidade" value={address} onChange={e => setAddress(e.target.value)} className="input-field" />
+
+          {/* ── COLUNA DIREITA: RESUMO FINANCEIRO & PAGAMENTO (5 COLUNAS) ── */}
+          <div className="lg:col-span-5 space-y-6">
+
+            {/* Pagamento Seguro & Resumo de Valores */}
+            <div className="glass-card-static p-6 rounded-2xl space-y-5">
+              <SectionTitle subtitle="Seu valor fica retido com segurança">
+                Forma de Pagamento
+              </SectionTitle>
+
+              {/* Alerta de Retenção e Segurança */}
+              <div className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/20 flex items-start gap-3">
+                <ShieldCheck size={18} className="text-cyan-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  O valor de <strong>R$ {totalValue}</strong> fica em custódia e só é liberado para <strong className="text-white">{p?.name}</strong> após o atendimento ser concluído.
+                </p>
+              </div>
+
+              {/* Seletor de Método de Pagamento */}
+              <div className="grid grid-cols-2 gap-3">
+                <PaymentOption
+                  icon={<QrCode size={22} />}
+                  label="PIX (Instantâneo)"
+                  selected={payment === 'pix'}
+                  onClick={() => setPayment('pix')}
+                />
+                <PaymentOption
+                  icon={<CreditCard size={22} />}
+                  label="Cartão de Crédito"
+                  selected={payment === 'card'}
+                  onClick={() => setPayment('card')}
+                />
+              </div>
+
+              {/* Discriminativo Financeiro Detalhado */}
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5 text-xs text-slate-300">
+                <div className="flex justify-between">
+                  <span>Profissional:</span>
+                  <span className="font-semibold text-white">{p?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Data:</span>
+                  <span className="font-semibold text-white">{date}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Período solicitado:</span>
+                  <span className="font-semibold text-white">{start} às {end}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Horas contratadas:</span>
+                  <span className="font-semibold text-cyan-400">{calculatedHours} horas</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Valor/hora:</span>
+                  <span className="font-semibold text-white">R$ {p?.hourlyRate}</span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Taxa de Intermediação:</span>
+                  <span className="text-emerald-400 font-semibold">Grátis (Promoção)</span>
+                </div>
+
+                <div className="pt-3 border-t border-slate-800 flex items-baseline justify-between">
+                  <span className="text-sm font-bold text-white">Total a Pagar:</span>
+                  <span
+                    className="text-2xl font-black"
+                    style={{
+                      background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                  >
+                    R$ {totalValue}
+                  </span>
+                </div>
+              </div>
+
+              {/* Botão de Envio do Pedido */}
+              <button
+                type="submit"
+                disabled={loading || calculatedHours <= 0}
+                className="btn-primary w-full py-4 text-sm font-bold rounded-xl shadow-lg"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Processando Agendamento...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    Confirmar e Agendar <CheckCircle2 size={18} />
+                  </span>
+                )}
+              </button>
+
+              <p className="text-[11px] text-slate-400 text-center">
+                Cancelamento gratuito com até 2 horas de antecedência.
+              </p>
+            </div>
+
           </div>
-          <div>
-            <Label>Descrição da necessidade (Opcional)</Label>
-            <textarea
-              placeholder="Ex: Idoso com mobilidade reduzida, pós-cirurgia de quadril..."
-              value={need} onChange={e => setNeed(e.target.value)}
-              rows={3} className="input-field" style={{ resize: 'none', lineHeight: 1.6 }}
-            />
-          </div>
+
         </div>
-
-        {/* Pagamento */}
-        <div className="glass-card-static" style={{ padding: 20, marginBottom: 20 }}>
-          <SectionTitle>Pagamento Seguro</SectionTitle>
-
-          {/* Alerta */}
-          <div style={{
-            display: 'flex', gap: 12, padding: 14, borderRadius: 'var(--radius-md)',
-            background: 'var(--accent-glow)',
-            border: '1px solid var(--border-accent)',
-            marginBottom: 16,
-          }}>
-            <ShieldCheck size={20} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
-            <p style={{ color: 'var(--text-primary)', fontSize: '0.8125rem', margin: 0, lineHeight: 1.5 }}>
-              O valor fica <strong style={{ color: 'var(--accent)' }}>retido com o CuidaCasa</strong> e só é liberado ao profissional após sua confirmação de conclusão do serviço.
-            </p>
-          </div>
-
-          {/* Método */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-            <PaymentOption icon={<QrCode size={24} />} label="PIX" selected={payment === 'pix'} onClick={() => setPayment('pix')} />
-            <PaymentOption icon={<CreditCard size={24} />} label="Cartão" selected={payment === 'card'} onClick={() => setPayment('card')} />
-          </div>
-
-          {/* Resumo */}
-          <div style={{
-            background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)',
-            padding: 16, border: '1px solid var(--border)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-              <span>Valor por hora</span><span>R$ {p?.hourlyRate}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-              <span>Duração estimada</span><span>~{hours}h</span>
-            </div>
-            <div style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              paddingTop: 12, borderTop: '1px solid var(--border)',
-            }}>
-              <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Total a reter</span>
-              <span style={{
-                fontSize: '1.35rem', fontWeight: 800,
-                background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              }}>R$ {total}</span>
-            </div>
-          </div>
-        </div>
-
-        <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', padding: '16px 20px', fontSize: '1rem' }}>
-          {loading ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="animate-spin" style={{
-                width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)',
-                borderTopColor: 'white', borderRadius: '50%',
-                display: 'inline-block',
-                animation: 'spin 0.8s linear infinite',
-              }} />
-              Processando...
-            </span>
-          ) : (
-            <>Confirmar e Pagar <CheckCircle2 size={18} /></>
-          )}
-        </button>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </form>
     </div>
   );
 }
 
-function Label({ children }) {
+function Label({ children, required }) {
   return (
-    <label style={{
-      display: 'block', fontSize: '0.6875rem', fontWeight: 700,
-      textTransform: 'uppercase', letterSpacing: '0.08em',
-      color: 'var(--text-muted)', marginBottom: 6,
-    }}>{children}</label>
+    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+      {children}
+      {required && <span className="text-cyan-400 ml-1">*</span>}
+    </label>
   );
 }
 
 function PaymentOption({ icon, label, selected, onClick }) {
   return (
-    <button type="button" onClick={onClick} style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', gap: 8,
-      padding: 16, borderRadius: 'var(--radius-md)',
-      border: `2px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
-      background: selected ? 'var(--accent-glow)' : 'var(--bg-card)',
-      color: selected ? 'var(--accent)' : 'var(--text-secondary)',
-      cursor: 'pointer', transition: 'all 0.25s',
-    }}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-col items-center justify-center p-3.5 rounded-xl border text-xs font-semibold gap-2 transition-all cursor-pointer ${
+        selected
+          ? 'bg-cyan-950/50 border-cyan-500 text-cyan-300 shadow-md'
+          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+      }`}
+    >
       {icon}
-      <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{label}</span>
+      <span>{label}</span>
     </button>
   );
 }
 
 /* ════════════════════════════════════════════
-   TELA 4 — MEUS PEDIDOS
+   TELA 4 — MEUS PEDIDOS (DESKTOP + MOBILE)
    ════════════════════════════════════════════ */
 
-function OrdersScreen({ orders, onChat, onFinalize }) {
+function OrdersScreen({ orders, onChat, onFinalize, onNewSearch }) {
   return (
-    <div className="animate-fade-in">
-      <h1 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 20 }}>Meus Pedidos</h1>
-
-      {orders.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{
-            width: 64, height: 64, borderRadius: 'var(--radius-lg)',
-            background: 'var(--bg-card)', border: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px',
-          }}>
-            <Clock size={28} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
-          </div>
-          <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}>Nenhum pedido ativo</h3>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-            Suas solicitações de atendimento aparecerão aqui.
+    <div className="animate-fade-in max-w-5xl mx-auto pb-16">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Meus Pedidos de Atendimento</h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Acompanhe o status dos plantões, fale com os profissionais e finalize os atendimentos.
           </p>
         </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {orders.map((o, idx) => (
-            <div key={o.id} className={`glass-card-static animate-fade-in-up stagger-${idx + 1}`}
-              style={{ overflow: 'hidden' }}
-            >
-              {/* Accent border */}
-              <div style={{
-                height: 3,
-                background: o.status === 'Concluído'
-                  ? 'linear-gradient(90deg, #059669, #10B981)'
-                  : 'linear-gradient(90deg, #2563EB, #00D4FF)',
-              }} />
 
-              <div style={{ padding: 18 }}>
-                {/* Top */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <img src={o.professional.image} alt="" style={{
-                      width: 44, height: 44, borderRadius: 'var(--radius-md)',
-                      objectFit: 'cover', border: '2px solid var(--border)',
-                    }} />
+        <button
+          onClick={onNewSearch}
+          className="btn-secondary text-xs py-2.5 px-4 rounded-xl self-start sm:self-auto"
+        >
+          <Search size={14} />
+          <span>Buscar Novos Profissionais</span>
+        </button>
+      </div>
+
+      {orders.length === 0 ? (
+        <div className="glass-card-static text-center py-16 px-4 rounded-2xl border border-slate-800">
+          <Clock size={40} className="text-slate-600 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-white mb-1">Nenhum atendimento solicitado ainda</h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">
+            Quando você solicitar um atendimento domiciliar, todos os detalhes, datas, horários e chat aparecerão nesta página.
+          </p>
+          <button onClick={onNewSearch} className="btn-primary text-xs py-2.5 px-5 rounded-xl">
+            Encontrar um Cuidador ou Enfermeiro
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {orders.map((o, idx) => (
+            <div
+              key={o.id}
+              className={`glass-card-static rounded-2xl overflow-hidden border flex flex-col justify-between stagger-${idx + 1}`}
+              style={{
+                borderColor: o.status === 'Concluído' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(0, 212, 255, 0.3)',
+              }}
+            >
+              {/* Linha superior de cor indicativa */}
+              <div
+                className="h-1.5 w-full"
+                style={{
+                  background: o.status === 'Concluído'
+                    ? 'linear-gradient(90deg, #059669, #10B981)'
+                    : 'linear-gradient(90deg, #2563EB, #00D4FF)',
+                }}
+              />
+
+              <div className="p-5 space-y-4">
+                {/* Cabeçalho do Card */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <ProfessionalAvatar
+                      src={o.professional.avatar || o.professional.image}
+                      name={o.professional.name}
+                      size={48}
+                      rounded="rounded-xl"
+                    />
                     <div>
-                      <p style={{ fontWeight: 700, fontSize: '0.9375rem', margin: '0 0 2px' }}>{o.professional.name}</p>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>{o.professional.specialty}</p>
+                      <h3 className="text-sm font-bold text-white">{o.professional.name}</h3>
+                      <p className="text-xs text-cyan-400">{o.professional.specialty}</p>
+                      <p className="text-[11px] text-slate-400">{o.professional.council}</p>
                     </div>
                   </div>
+
                   <span className={`badge ${
                     o.status === 'Concluído' ? 'badge-status-done' :
                     o.status === 'Confirmado' ? 'badge-status-confirmed' :
                     'badge-status-waiting'
-                  }`}>{o.status}</span>
+                  }`}>
+                    {o.status}
+                  </span>
                 </div>
 
-                {/* Details */}
-                <div style={{
-                  background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)',
-                  padding: 12, marginBottom: 14, fontSize: '0.8125rem', lineHeight: 1.7,
-                  border: '1px solid var(--border)',
-                }}>
-                  <p style={{ margin: 0 }}><span style={{ color: 'var(--text-muted)' }}>Data:</span> {o.date}</p>
-                  <p style={{ margin: 0 }}><span style={{ color: 'var(--text-muted)' }}>Horário:</span> {o.startTime}</p>
-                  <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Local:</span> {o.address}
-                  </p>
+                {/* Dados da Programação (Data, Início e Fim) */}
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-xs text-slate-300">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} className="text-cyan-400 shrink-0" />
+                    <span><strong>Data:</strong> {o.date}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock size={14} className="text-cyan-400 shrink-0" />
+                    <span>
+                      <strong>Horário:</strong> das {o.startTime} às {o.endTime || '--:--'}
+                      {o.durationHours ? ` (${o.durationHours}h)` : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MapPin size={14} className="text-cyan-400 shrink-0 mt-0.5" />
+                    <span className="truncate"><strong>Local:</strong> {o.address}</span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
+                    <span className="text-slate-400">Total retido:</span>
+                    <span className="font-bold text-cyan-300">R$ {o.totalValue}</span>
+                  </div>
                 </div>
 
-                {/* Actions */}
-                {o.status === 'Confirmado' && (
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button onClick={() => onChat(o)} className="btn-secondary" style={{ flex: 1, padding: '10px 14px', fontSize: '0.8125rem' }}>
-                      <MessageCircle size={16} /> Chat
-                    </button>
-                    <button onClick={() => onFinalize(o)} className="btn-success" style={{ flex: 1, padding: '10px 14px', fontSize: '0.8125rem' }}>
-                      <CheckCircle2 size={16} /> Finalizar
-                    </button>
-                  </div>
-                )}
-                {o.status === 'Concluído' && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    padding: '10px', borderRadius: 'var(--radius-md)',
-                    background: 'var(--success-glow)',
-                    color: 'var(--success)',
-                    fontSize: '0.8125rem', fontWeight: 600,
-                  }}>
-                    <CheckCircle2 size={16} /> Serviço Finalizado
-                  </div>
-                )}
+                {/* Ações */}
+                <div className="pt-2">
+                  {o.status === 'Confirmado' ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => onChat(o)}
+                        className="btn-secondary text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2"
+                      >
+                        <MessageCircle size={15} />
+                        <span>Chat Direto</span>
+                      </button>
+
+                      <button
+                        onClick={() => onFinalize(o)}
+                        className="btn-success text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle2 size={15} />
+                        <span>Concluir Serviço</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-2">
+                      <CheckCircle2 size={16} />
+                      <span>Atendimento Concluído & Liberado</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -815,19 +1737,36 @@ function OrdersScreen({ orders, onChat, onFinalize }) {
 }
 
 /* ════════════════════════════════════════════
-   TELA 4b — CHAT
+   TELA 4b — CHAT COM O PROFISSIONAL
    ════════════════════════════════════════════ */
 
 function ChatScreen({ order, onBack }) {
   const [msgs, setMsgs] = useState([
-    { id: 1, text: `Olá! Confirmo o atendimento para ${order?.date} às ${order?.startTime}. Estarei aí com 10 minutos de antecedência.`, sender: 'pro', time: '10:00' },
-    { id: 2, text: 'Perfeito! O endereço que está no app é o correto. Obrigado!', sender: 'user', time: '10:02' },
-    { id: 3, text: 'Ótimo, já conferi. Até lá! Qualquer dúvida estou à disposição.', sender: 'pro', time: '10:04' },
+    {
+      id: 1,
+      text: `Olá! Confirmado o atendimento para o dia ${order?.date}, das ${order?.startTime} às ${order?.endTime} (${order?.durationHours || 4} horas de plantão).`,
+      sender: 'pro',
+      time: '08:30'
+    },
+    {
+      id: 2,
+      text: 'Perfeito! O endereço que está no aplicativo é o correto. Estamos aguardando você com os medicamentos prescritos já separados.',
+      sender: 'user',
+      time: '08:32'
+    },
+    {
+      id: 3,
+      text: 'Excelente! Chegarei 10 minutos antes com jaleco e equipamentos esterilizados. Qualquer dúvida, pode me mandar mensagem por aqui.',
+      sender: 'pro',
+      time: '08:35'
+    },
   ]);
   const [input, setInput] = useState('');
   const endRef = useRef(null);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [msgs]);
 
   const send = (e) => {
     e.preventDefault();
@@ -835,92 +1774,89 @@ function ChatScreen({ order, onBack }) {
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setMsgs(m => [...m, { id: Date.now(), text: input, sender: 'user', time: now }]);
     setInput('');
+
     setTimeout(() => {
       const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setMsgs(m => [...m, { id: Date.now(), text: 'Entendido! Fico à disposição 😊', sender: 'pro', time: t }]);
-    }, 2000);
+      setMsgs(m => [...m, {
+        id: Date.now(),
+        text: 'Combinado! Mensagem recebida. Estou a caminho e focado no melhor cuidado!',
+        sender: 'pro',
+        time: t
+      }]);
+    }, 1500);
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)', marginTop: -20 }} className="animate-fade-in">
-      {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        padding: '14px 0', borderBottom: '1px solid var(--border)',
-        marginBottom: 0,
-      }}>
-        <button onClick={onBack} style={{
-          background: 'none', border: 'none', color: 'var(--text-secondary)',
-          cursor: 'pointer', padding: 4,
-        }}><ChevronLeft size={20} /></button>
-        <img src={order?.professional?.image} alt="" style={{
-          width: 40, height: 40, borderRadius: 'var(--radius-md)',
-          objectFit: 'cover', border: '2px solid var(--border)',
-        }} />
-        <div>
-          <p style={{ fontWeight: 700, fontSize: '0.875rem', margin: 0 }}>{order?.professional?.name}</p>
-          <p style={{
-            fontSize: '0.6875rem', margin: 0, color: 'var(--success)',
-            display: 'flex', alignItems: 'center', gap: 4,
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', display: 'inline-block' }} /> Online
-          </p>
+    <div className="animate-fade-in max-w-3xl mx-auto flex flex-col h-[calc(100vh-140px)]">
+      {/* Header do Chat */}
+      <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="p-1 text-slate-400 hover:text-white transition-colors"
+          >
+            <ChevronLeft size={20} />
+          </button>
+
+          <ProfessionalAvatar
+            src={order?.professional?.avatar || order?.professional?.image}
+            name={order?.professional?.name}
+            size={40}
+            rounded="rounded-xl"
+          />
+
+          <div>
+            <h3 className="text-sm font-bold text-white">{order?.professional?.name}</h3>
+            <p className="text-[11px] text-emerald-400 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              Online agora
+            </p>
+          </div>
+        </div>
+
+        <div className="text-right text-[11px] text-slate-400 hidden sm:block">
+          <span>Plantão em: <strong>{order?.date}</strong></span>
         </div>
       </div>
 
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {msgs.map(m => (
-            <div key={m.id} style={{
-              display: 'flex',
-              justifyContent: m.sender === 'user' ? 'flex-end' : 'flex-start',
-            }}>
-              <div style={{
-                maxWidth: '78%', padding: '10px 14px',
-                borderRadius: m.sender === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                background: m.sender === 'user'
-                  ? 'linear-gradient(135deg, #2563EB, #0891B2)'
-                  : 'var(--bg-elevated)',
-                border: m.sender === 'user' ? 'none' : '1px solid var(--border)',
-                color: 'var(--text-primary)',
-                boxShadow: m.sender === 'user' ? '0 2px 12px rgba(0,212,255,0.15)' : 'var(--shadow-sm)',
-              }}>
-                <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.5 }}>{m.text}</p>
-                <p style={{
-                  margin: '4px 0 0', fontSize: '0.625rem', textAlign: 'right',
-                  color: m.sender === 'user' ? 'rgba(255,255,255,0.5)' : 'var(--text-muted)',
-                }}>{m.time}</p>
-              </div>
+      {/* Área de Mensagens */}
+      <div className="flex-1 overflow-y-auto p-4 rounded-2xl bg-slate-950/60 border border-slate-900 space-y-3">
+        {msgs.map(m => (
+          <div
+            key={m.id}
+            className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[80%] sm:max-w-[70%] p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                m.sender === 'user'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-tr-none shadow-md'
+                  : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'
+              }`}
+            >
+              <p>{m.text}</p>
+              <span className={`block text-[10px] text-right mt-1.5 ${m.sender === 'user' ? 'text-cyan-100/70' : 'text-slate-400'}`}>
+                {m.time}
+              </span>
             </div>
-          ))}
-          <div ref={endRef} />
-        </div>
+          </div>
+        ))}
+        <div ref={endRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={send} style={{
-        display: 'flex', gap: 10, padding: '12px 0',
-        borderTop: '1px solid var(--border)',
-      }}>
+      {/* Input de Mensagem */}
+      <form onSubmit={send} className="flex gap-2 mt-3">
         <input
-          type="text" value={input} onChange={e => setInput(e.target.value)}
-          placeholder="Digite sua mensagem..."
-          className="input-field"
-          style={{
-            flex: 1, borderRadius: 'var(--radius-full)', padding: '12px 18px',
-            background: 'var(--bg-card)',
-          }}
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Envie uma mensagem para o profissional..."
+          className="input-field rounded-2xl"
         />
-        <button type="submit" style={{
-          width: 48, height: 48, borderRadius: '50%',
-          background: 'linear-gradient(135deg, #2563EB, #00D4FF)',
-          border: 'none', color: 'white', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0, transition: 'all 0.2s',
-          boxShadow: '0 2px 12px rgba(0,212,255,0.25)',
-        }}>
-          <Send size={18} style={{ marginLeft: 2 }} />
+        <button
+          type="submit"
+          className="btn-primary rounded-2xl px-5 shrink-0"
+        >
+          <Send size={16} />
         </button>
       </form>
     </div>
@@ -928,107 +1864,111 @@ function ChatScreen({ order, onBack }) {
 }
 
 /* ════════════════════════════════════════════
-   TELA 5 — FINALIZAÇÃO E AVALIAÇÃO
+   TELA 5 — FINALIZAÇÃO & AVALIAÇÃO
    ════════════════════════════════════════════ */
 
 function FinalizeScreen({ order, onBack, onSubmit }) {
-  const [rating, setRating] = useState(0);
+  const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = () => {
     setSubmitted(true);
-    setTimeout(onSubmit, 2000);
+    setTimeout(onSubmit, 1800);
   };
 
   if (submitted) {
     return (
-      <div className="animate-fade-in-up" style={{ textAlign: 'center', paddingTop: 80 }}>
-        <div style={{
-          width: 80, height: 80, borderRadius: '50%',
-          background: 'var(--success-glow)',
-          border: '2px solid var(--success)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 20px',
-          animation: 'pulse-glow 2s ease-in-out infinite',
-        }}>
-          <CheckCircle2 size={36} style={{ color: 'var(--success)' }} />
+      <div className="animate-fade-in text-center py-20 max-w-md mx-auto">
+        <div className="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mx-auto mb-4 animate-bounce">
+          <CheckCircle2 size={36} className="text-emerald-400" />
         </div>
-        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 8 }}>Obrigado!</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          Sua avaliação foi enviada e o pagamento está sendo liberado.
+        <h2 className="text-2xl font-extrabold text-white mb-2">Atendimento Concluído com Sucesso!</h2>
+        <p className="text-xs sm:text-sm text-slate-300">
+          Sua avaliação foi registrada e o valor foi liberado com segurança ao profissional.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="animate-slide-bottom">
-      <BackButton onClick={onBack} />
+    <div className="animate-slide-bottom max-w-xl mx-auto pb-16">
+      <BackButton onClick={onBack} label="Voltar aos pedidos" />
 
-      {/* Success indicator */}
-      <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <div style={{
-          width: 72, height: 72, borderRadius: '50%',
-          background: 'var(--success-glow)',
-          border: '2px solid var(--success)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 16px',
-        }}>
-          <CheckCircle2 size={32} style={{ color: 'var(--success)' }} />
+      <div className="text-center mb-6">
+        <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center mx-auto mb-3">
+          <Award size={28} className="text-cyan-400" />
         </div>
-        <h1 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 6 }}>Serviço Concluído!</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-          O valor retido será liberado ao profissional após sua avaliação.
+        <h1 className="text-2xl font-extrabold text-white">Concluir e Avaliar Atendimento</h1>
+        <p className="text-xs text-slate-400 mt-1">
+          Ao avaliar, você atesta que o atendimento ocorreu conforme o combinado e libera o valor em custódia.
         </p>
       </div>
 
-      {/* Rating Card */}
-      <div className="glass-card-static" style={{ padding: 24 }}>
-        <h3 style={{ textAlign: 'center', fontSize: '0.9375rem', fontWeight: 600, marginBottom: 20, color: 'var(--text-secondary)' }}>
-          Como foi o atendimento de <span style={{ color: 'var(--accent)' }}>{order?.professional?.name}</span>?
-        </h3>
-
-        {/* Stars */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
-          {[1, 2, 3, 4, 5].map(s => (
-            <button key={s}
-              onClick={() => setRating(s)}
-              onMouseEnter={() => setHoverRating(s)}
-              onMouseLeave={() => setHoverRating(0)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer', padding: 4,
-                transform: `scale(${(hoverRating || rating) >= s ? 1.15 : 1})`,
-                transition: 'transform 0.2s',
-              }}
-            >
-              <Star size={36}
-                fill={(hoverRating || rating) >= s ? '#FBBF24' : 'transparent'}
-                color={(hoverRating || rating) >= s ? '#FBBF24' : '#475569'}
-                strokeWidth={1.5}
-              />
-            </button>
-          ))}
+      <div className="glass-card-static p-6 sm:p-8 rounded-2xl space-y-6">
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <ProfessionalAvatar
+            src={order?.professional?.avatar || order?.professional?.image}
+            name={order?.professional?.name}
+            size={48}
+            rounded="rounded-xl"
+          />
+          <div>
+            <p className="text-sm font-bold text-white">{order?.professional?.name}</p>
+            <p className="text-xs text-cyan-400">{order?.professional?.specialty}</p>
+            <p className="text-[11px] text-slate-400">Total a liberar: <strong>R$ {order?.totalValue}</strong></p>
+          </div>
         </div>
 
-        {rating > 0 && (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8125rem', marginBottom: 16 }}>
-            {rating <= 2 ? 'Que pena! Conte-nos o que aconteceu.' : rating <= 4 ? 'Bom! Obrigado pelo feedback.' : 'Excelente! Ficamos felizes! 🎉'}
+        {/* Avaliação em Estrelas */}
+        <div className="text-center space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Como foi a experiência da sua família?</p>
+          <div className="flex justify-center gap-2 py-2">
+            {[1, 2, 3, 4, 5].map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setRating(s)}
+                onMouseEnter={() => setHoverRating(s)}
+                onMouseLeave={() => setHoverRating(0)}
+                className="p-1.5 transition-transform hover:scale-125 cursor-pointer bg-transparent border-none"
+              >
+                <Star
+                  size={36}
+                  fill={(hoverRating || rating) >= s ? '#FBBF24' : 'transparent'}
+                  color={(hoverRating || rating) >= s ? '#FBBF24' : '#475569'}
+                  strokeWidth={1.5}
+                />
+              </button>
+            ))}
+          </div>
+          <p className="text-xs font-semibold text-amber-400">
+            {rating === 5 && 'Excepcional! Cuidado e dedicação impecáveis.'}
+            {rating === 4 && 'Muito bom! Atendimento bem prestado.'}
+            {rating === 3 && 'Atendimento satisfatório.'}
+            {rating <= 2 && 'Deixe seu relato para apurarmos.'}
           </p>
-        )}
+        </div>
 
-        <div style={{ marginBottom: 20 }}>
-          <Label>Deixe um comentário (Opcional)</Label>
+        {/* Comentário */}
+        <div>
+          <Label>Deixe um elogio ou relato para o profissional (Opcional)</Label>
           <textarea
-            value={comment} onChange={e => setComment(e.target.value)}
-            rows={3} placeholder="Como foi o cuidado com a sua família?"
-            className="input-field" style={{ resize: 'none', lineHeight: 1.6, textAlign: 'center' }}
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            rows={3}
+            placeholder="Ex: A profissional foi extremamente pontual, carinhosa com meu pai e cuidou de tudo com muita calma e perícia técnica."
+            className="input-field resize-none leading-relaxed"
           />
         </div>
 
-        <button onClick={handleSubmit} disabled={rating === 0} className="btn-primary" style={{ width: '100%', padding: '14px 20px', fontSize: '0.9375rem' }}>
-          Liberar Pagamento e Avaliar <Heart size={16} />
+        <button
+          onClick={handleSubmit}
+          className="btn-primary w-full py-4 text-sm font-bold rounded-xl"
+        >
+          <span>Liberar Pagamento e Enviar Avaliação</span>
+          <Heart size={16} />
         </button>
       </div>
     </div>
