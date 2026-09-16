@@ -10,6 +10,7 @@
   --text: #F8FAFC;
   --text-muted: #94A3B8;
   --border: #334155;
+  --success: #10B981;
 }
 
 @layer base {
@@ -18,7 +19,7 @@
   }
 
   body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background: var(--bg);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
@@ -30,7 +31,78 @@
     font-weight: 600;
   }
 
-  button {
+  button, input, select, textarea {
     font-family: inherit;
   }
+}
+
+.card {
+  background-color: #162032;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+}
+
+.btn-primary {
+  background-image: linear-gradient(to right, #2563EB, #00D4FF);
+  color: white;
+  font-weight: 500;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 212, 255, 0.2);
+}
+.btn-primary:hover {
+  background-image: linear-gradient(to right, #1D4ED8, #0284C7);
+  transform: scale(1.02);
+}
+.btn-primary:active {
+  transform: scale(0.95);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border: 1px solid #334155;
+  color: white;
+  font-weight: 500;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+.btn-secondary:hover {
+  background-color: #334155;
+}
+
+.input-field, .select-field {
+  width: 100%;
+  background-color: #0B101D;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  color: white;
+  transition: all 0.2s;
+}
+.input-field::placeholder {
+  color: #94A3B8;
+}
+.input-field:focus, .select-field:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #00D4FF;
+  border-color: transparent;
+}
+
+/* Custom scrollbar for chat */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
 }

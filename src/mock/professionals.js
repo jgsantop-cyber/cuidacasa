@@ -1,55 +1,52 @@
 export const professionalsData = [
   {
-    id: '1',
-    name: 'Maria Santos',
-    specialty: 'Enfermeiro',
-    cren: 'COREN 12345',
-    rating: 4.9,
+    id: 1,
+    name: "Maria Silva",
+    image: "https://images.unsplash.com/photo-1594822613047-49e088d1d482?w=200&h=200&fit=crop",
+    specialty: "Enfermeira",
     hourlyRate: 85,
-    image: 'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?w=150&h=150&fit=crop&crop=face',
-    experience: '12 anos de experiência em cuidados hospitalares e domiciliares',
-    areas: ['Cuidados pós-operatórios', ' administração de medicação', 'monitoramento de sinais vitais'],
-    reviews: [
-      { user: 'Família Oliveira', rating: 5, comment: 'Excelente cuidado com meu pai pós-cirurgia. Muito profissional e atencioso.' },
-      { user: 'Família Rocha', rating: 5, comment: 'Confiamos totalmente na Maria. Sempre atenta às necessidades do paciente.' },
-    ],
     isVerified: true,
-    distance: '2.3 km',
+    distance: "3.2",
+    experience: "5 anos de experiência",
+    areas: ["Cuidados Pós-Operatório", "Hidratação Endovenosa", "Controle de Medicação"],
     available: true,
+    rating: 5,
+    reviews: [
+      { user: "Família Santos", rating: 5, comment: "Excelente cuidado com meu pai pós-cirurgia. Muito atenciosa." },
+      { user: "Família Oliveira", rating: 4, comment: "Profissional qualificada e confiável." }
+    ]
   },
   {
-    id: '2',
-    name: 'Carlos Oliveira',
-    specialty: 'Fisioterapeuta',
-    crefit: 'CREFITO 67890',
-    rating: 4.7,
-    hourlyRate: 120,
-    image: 'https://images.unsplash.com/photo-1519741497671-56522f12d21e?w=150&h=150&fit=crop&crop=face',
-    experience: '8 anos de experiência em reabilitação física e fisioterapia esportiva',
-    areas: ['Fisioterapia ortopédica', 'reabilitação pós-acidente', 'exercícios funcionais'],
-    reviews: [
-      { user: 'Família Santos', rating: 4, comment: 'Bom profissional, mas as sessões poderiam ser mais frequentes.' },
-      { user: 'Família Pereira', rating: 5, comment: 'Notei muita diferença na mobilidade do meu filho após as sessões.' },
-    ],
-    isVerified: true,
-    distance: '4.7 km',
-    available: true,
-  },
-  {
-    id: '3',
-    name: 'Ana Costa',
-    specialty: 'Cuidador',
-    rating: 4.5,
+    id: 2,
+    name: "João Costa",
+    image: "https://images.unsplash.com/photo-1600596542815-5a9c4b1d0b5e?w=200&h=200&fit=crop",
+    specialty: "Técnico de Enfermagem",
     hourlyRate: 65,
-    image: 'https://images.unsplash.com/photo-1544005313-94ddf08d69c2?w=150&h=150&fit=crop&crop=face',
-    experience: '5 anos de experiência em cuidados com idosos e mobilidade reduzida',
-    areas: ['Cuidados diários', 'higiene pessoal', 'acompanhamento médico'],
-    reviews: [
-      { user: 'Família Lima', rating: 5, comment: 'A Ana é muito carinhosa e dedicação total.' },
-      { user: 'Família Sousa', rating: 4, comment: 'Bom custo-benefício, mas comunicação poderia ser mais ágil.' },
-    ],
-    isVerified: false,
-    distance: '6.2 km',
+    isVerified: true,
+    distance: "1.8",
+    experience: "3 anos de experiência",
+    areas: ["Cuidados com Idoso", "Auxílio Mobilidade", "Banho e Higiene"],
     available: false,
+    rating: 5,
+    reviews: [
+      { user: "Família Rezende", rating: 5, comment: "Muito paciente e cuidadoso. Recomendo muito." }
+    ]
   },
-]
+  {
+    id: 3,
+    name: "Ana Lima",
+    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop",
+    specialty: "Fisioterapeuta",
+    hourlyRate: 100,
+    isVerified: false,
+    distance: "5.6",
+    experience: "7 anos de experiência",
+    areas: ["Fisioterapia Ortopédica", "Reabilitação", "Exercícios Funcionais"],
+    available: true,
+    rating: 4.5,
+    reviews: [
+      { user: "Família Rocha", rating: 5, comment: "Melhor fisioterapeuta que já tive. Resultados visíveis imediatos." },
+      { user: "Família Pereira", rating: 4, comment: "Profissional dedicada, mas agenda bastante concorrida." }
+    ]
+  }
+];
