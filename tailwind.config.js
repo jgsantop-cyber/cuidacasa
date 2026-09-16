@@ -23,4 +23,5 @@ export default {
     },
   },
   plugins: [],
+  // @tailwindcss/forms is built-in in v4, no need to import separately
 }
