@@ -5,9 +5,41 @@ import {
   ChevronRight, Filter, Zap, Heart, X, ArrowRight,
   PhoneCall, Award, UserCheck, HelpCircle, ChevronDown,
   Calendar, Check, AlertCircle, Info, Sparkles, Volume2,
-  Lock, ThumbsUp, Activity, FileText
+  Lock, ThumbsUp, Activity, FileText, User, Settings,
+  Bell, LogOut, Plus, Edit3, Shield, HeartHandshake, Phone
 } from 'lucide-react';
 import { professionalsData } from './mock/professionals';
+
+/* ════════════════════════════════════════════
+   DADOS MOCK DO USUÁRIO LOGADO
+   ════════════════════════════════════════════ */
+
+const initialUserData = {
+  name: "João Guilherme Santos",
+  email: "joao.santos@email.com",
+  phone: "(11) 98765-4321",
+  cpf: "342.***.***-80",
+  avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200",
+  role: "Familiar Responsável (Titular)",
+  patient: {
+    name: "Sr. Antônio Santos",
+    kinship: "Pai",
+    age: 78,
+    condition: "Pós-operatório de fratura de fêmur e hipertensão arterial controlada.",
+    mobility: "Mobilidade reduzida com andador de 4 rodas.",
+    allergies: "Alérgico a Dipirona e Iodo.",
+    healthInsurance: "Bradesco Saúde Top Nacional",
+    emergencyContact: "(11) 99123-0000 (Irmã - Mariana Santos)"
+  },
+  address: "Rua Bela Cintra, 1420, Apto 82 - Jardins, São Paulo - SP",
+  paymentMethod: "Mastercard final 4092 (Crédito)",
+  pixKey: "joao.santos@email.com",
+  notifications: {
+    whatsappUpdates: true,
+    emailReports: true,
+    medicationAlerts: true
+  }
+};
 
 /* ════════════════════════════════════════════
    UTILITÁRIOS & COMPONENTES COMPARTILHADOS
@@ -52,73 +84,6 @@ function ProfessionalAvatar({ src, name, size = 56, className = '', rounded = 'r
         border: '2px solid rgba(51, 65, 85, 0.6)',
       }}
     />
-  );
-}
-
-// Controle Aprimorado de Tamanho de Fonte (Acessibilidade)
-function AccessibilityControl({ fontScale, setFontScale }) {
-  const increase = () => setFontScale(prev => Math.min(1.35, +(prev + 0.1).toFixed(2)));
-  const decrease = () => setFontScale(prev => Math.max(0.9, +(prev - 0.1).toFixed(2)));
-  const reset = () => setFontScale(1);
-
-  const percentage = Math.round(fontScale * 100);
-
-  return (
-    <div
-      className="flex items-center gap-1.5 p-1 rounded-xl"
-      style={{
-        background: 'rgba(17, 24, 39, 0.85)',
-        border: '1px solid rgba(0, 212, 255, 0.25)',
-        backdropFilter: 'blur(8px)',
-      }}
-      title="Acessibilidade: Ajuste o tamanho da letra do site"
-    >
-      <button
-        onClick={decrease}
-        disabled={fontScale <= 0.9}
-        className="w-7 h-7 flex items-center justify-center rounded-lg transition-all text-xs font-bold"
-        style={{
-          background: fontScale <= 0.9 ? 'transparent' : 'rgba(30, 41, 59, 0.8)',
-          color: fontScale <= 0.9 ? 'var(--text-muted)' : 'var(--text-primary)',
-          cursor: fontScale <= 0.9 ? 'not-allowed' : 'pointer',
-          border: '1px solid var(--border)',
-        }}
-        aria-label="Diminuir tamanho da fonte"
-      >
-        A-
-      </button>
-
-      <button
-        onClick={reset}
-        className="px-2 h-7 flex items-center justify-center rounded-lg transition-all text-xs font-semibold gap-1"
-        style={{
-          background: fontScale !== 1 ? 'rgba(0, 212, 255, 0.15)' : 'transparent',
-          color: fontScale !== 1 ? 'var(--accent)' : 'var(--text-secondary)',
-          cursor: 'pointer',
-          border: fontScale !== 1 ? '1px solid rgba(0, 212, 255, 0.3)' : '1px solid transparent',
-        }}
-        title="Clique para voltar ao tamanho padrão (100%)"
-      >
-        <span className="hidden sm:inline text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Fonte:</span>
-        <span className="font-bold">{percentage}%</span>
-      </button>
-
-      <button
-        onClick={increase}
-        disabled={fontScale >= 1.35}
-        className="w-7 h-7 flex items-center justify-center rounded-lg transition-all text-xs font-bold"
-        style={{
-          background: fontScale >= 1.35 ? 'transparent' : 'linear-gradient(135deg, #2563EB, #00D4FF)',
-          color: fontScale >= 1.35 ? 'var(--text-muted)' : 'white',
-          cursor: fontScale >= 1.35 ? 'not-allowed' : 'pointer',
-          border: fontScale >= 1.35 ? '1px solid var(--border)' : 'none',
-          boxShadow: fontScale < 1.35 ? '0 0 10px rgba(0, 212, 255, 0.3)' : 'none',
-        }}
-        aria-label="Aumentar tamanho da fonte"
-      >
-        A+
-      </button>
-    </div>
   );
 }
 
@@ -190,17 +155,9 @@ function SectionTitle({ children, subtitle }) {
    ════════════════════════════════════════════ */
 
 export default function App() {
-  const [fontScale, setFontScale] = useState(1);
-  const rootRef = useRef(null);
-
-  useEffect(() => {
-    if (rootRef.current) {
-      rootRef.current.style.fontSize = `${16 * fontScale}px`;
-    }
-  }, [fontScale]);
-
   const [screen, setScreen] = useState('home');
   const [selectedPro, setSelectedPro] = useState(null);
+  const [userProfile, setUserProfile] = useState(initialUserData);
   const [orders, setOrders] = useState([
     {
       id: 101,
@@ -209,7 +166,7 @@ export default function App() {
       startTime: '08:00',
       endTime: '14:00',
       durationHours: 6,
-      address: 'Rua Bela Cintra, 1420 - Jardins, São Paulo',
+      address: initialUserData.address,
       need: 'Acompanhamento pós-cirúrgico de quadril e medicação endovenosa.',
       totalValue: 510,
       paymentMethod: 'pix',
@@ -225,13 +182,13 @@ export default function App() {
   };
 
   return (
-    <div ref={rootRef} className="min-h-screen bg-grid flex flex-col" style={{ background: 'var(--bg-primary)' }}>
+    <div className="min-h-screen bg-grid flex flex-col" style={{ background: 'var(--bg-primary)' }}>
 
       {/* ── HEADER RESPONSIVO (DESKTOP + MOBILE) ── */}
       <header
         className="sticky top-0 z-50 w-full border-b transition-all"
         style={{
-          background: 'rgba(6, 10, 19, 0.92)',
+          background: 'rgba(6, 10, 19, 0.94)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderColor: 'var(--border)',
@@ -314,16 +271,15 @@ export default function App() {
             </button>
           </nav>
 
-          {/* Ferramentas do Topo: Acessibilidade & Suporte */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <AccessibilityControl fontScale={fontScale} setFontScale={setFontScale} />
-
-            <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-800">
+          {/* ── BOLINHA DE PERFIL DO USUÁRIO NO TOPO (DESKTOP + MOBILE) ── */}
+          <div className="flex items-center gap-3">
+            {/* Botão Plantão 24h (Desktop) */}
+            <div className="hidden lg:flex items-center gap-2 pr-3 border-r border-slate-800">
               <a
                 href="#ajuda"
                 onClick={(e) => {
                   e.preventDefault();
-                  alert("Central CuidaCasa 24h: Ligue 0800 882 2424 ou fale conosco pelo WhatsApp disponível no rodapé.");
+                  alert("Central CuidaCasa 24h: Ligue 0800 882 2424 ou fale conosco pelo WhatsApp.");
                 }}
                 className="flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-cyan-400 transition-colors px-2 py-1"
               >
@@ -331,6 +287,49 @@ export default function App() {
                 <span>Plantão 24h</span>
               </a>
             </div>
+
+            {/* BOLINHA DE PERFIL / MINHA CONTA */}
+            <button
+              onClick={() => nav('user-profile')}
+              className={`flex items-center gap-2.5 p-1.5 sm:px-3 sm:py-1.5 rounded-2xl transition-all border cursor-pointer ${
+                screen === 'user-profile'
+                  ? 'bg-cyan-950/60 border-cyan-400 shadow-md shadow-cyan-500/20'
+                  : 'bg-slate-900/80 border-slate-800 hover:border-slate-700 hover:bg-slate-800/80'
+              }`}
+              title="Meu Perfil, Informações e Configurações"
+            >
+              {/* Bolinha com foto e anel gradiente */}
+              <div className="relative">
+                <img
+                  src={userProfile.avatar}
+                  alt={userProfile.name}
+                  className="w-9 h-9 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-cyan-400 shadow-sm"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextSibling.style.display = 'flex';
+                  }}
+                />
+                <div
+                  className="hidden w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 text-white font-bold text-xs items-center justify-center border-2 border-cyan-400"
+                >
+                  JS
+                </div>
+                {/* Ponto indicador de status ativo */}
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-slate-900" />
+              </div>
+
+              {/* Informações resumidas visíveis em Desktop */}
+              <div className="hidden sm:block text-left">
+                <span className="text-xs font-bold text-white block leading-tight truncate max-w-[130px]">
+                  {userProfile.name.split(' ')[0]} Santos
+                </span>
+                <span className="text-[10px] text-cyan-400 font-medium block leading-none">
+                  Minha Conta
+                </span>
+              </div>
+
+              <Settings size={14} className="text-slate-400 hidden sm:block ml-0.5" />
+            </button>
           </div>
 
         </div>
@@ -380,6 +379,13 @@ export default function App() {
               setOrders(orders.map(o => o.id === finalizeOrder.id ? { ...o, status: 'Concluído' } : o));
               nav('orders');
             }}
+          />
+        )}
+        {screen === 'user-profile' && (
+          <UserProfileScreen
+            userData={userProfile}
+            onUpdate={setUserProfile}
+            onBack={() => nav('home')}
           />
         )}
       </main>
@@ -456,7 +462,7 @@ export default function App() {
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t"
         style={{
-          background: 'rgba(6, 10, 19, 0.94)',
+          background: 'rgba(6, 10, 19, 0.95)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderColor: 'var(--border)',
@@ -471,10 +477,16 @@ export default function App() {
           />
           <NavBtn
             icon={<Clock size={22} />}
-            label="Meus Pedidos"
+            label="Pedidos"
             active={screen === 'orders' || screen === 'chat' || screen === 'finalize'}
             onClick={() => nav('orders')}
             badge={orders.filter(o => o.status === 'Confirmado').length || null}
+          />
+          <NavBtn
+            icon={<User size={22} />}
+            label="Minha Conta"
+            active={screen === 'user-profile'}
+            onClick={() => nav('user-profile')}
           />
         </div>
       </nav>
@@ -487,14 +499,14 @@ function NavBtn({ icon, label, active, onClick, badge }) {
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center relative py-1 px-5 transition-colors cursor-pointer border-none bg-transparent"
+      className="flex flex-col items-center justify-center relative py-1 px-4 transition-colors cursor-pointer border-none bg-transparent"
       style={{
         color: active ? 'var(--accent)' : 'var(--text-muted)',
       }}
     >
       {badge && (
         <span
-          className="absolute top-0 right-4 w-4 h-4 rounded-full flex items-center justify-center font-bold text-[9px] text-white"
+          className="absolute top-0 right-3 w-4 h-4 rounded-full flex items-center justify-center font-bold text-[9px] text-white"
           style={{ background: 'var(--danger)' }}
         >
           {badge}
@@ -518,6 +530,390 @@ function HeartPulseIcon(props) {
       <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
       <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27" />
     </svg>
+  );
+}
+
+/* ════════════════════════════════════════════
+   TELA NOVA: PERFIL DO USUÁRIO & CONFIGURAÇÕES
+   ════════════════════════════════════════════ */
+
+function UserProfileScreen({ userData, onUpdate, onBack }) {
+  const [activeTab, setActiveTab] = useState('patient');
+  const [notifications, setNotifications] = useState(userData.notifications);
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  const toggleNotif = (key) => {
+    const updated = { ...notifications, [key]: !notifications[key] };
+    setNotifications(updated);
+    onUpdate({ ...userData, notifications: updated });
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 2500);
+  };
+
+  return (
+    <div className="animate-slide-right max-w-4xl mx-auto pb-16">
+      <BackButton onClick={onBack} label="Voltar à tela inicial" />
+
+      {/* ── CARD PRINCIPAL DO USUÁRIO (HEADER DE PERFIL) ── */}
+      <div className="glass-card-static p-6 rounded-3xl mb-6 relative overflow-hidden border border-slate-800">
+        <div
+          className="absolute -top-24 -right-24 w-80 h-80 rounded-full blur-3xl pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(0, 212, 255, 0.12) 0%, transparent 70%)' }}
+        />
+
+        <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
+          {/* Avatar com badge */}
+          <div className="relative">
+            <img
+              src={userData.avatar}
+              alt={userData.name}
+              className="w-24 h-24 rounded-full object-cover border-3 border-cyan-400 shadow-xl"
+            />
+            <button
+              onClick={() => alert("Função para atualizar foto de perfil ativada.")}
+              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-slate-900 border border-slate-700 text-cyan-400 flex items-center justify-center hover:bg-slate-800 cursor-pointer shadow-md"
+              title="Alterar foto"
+            >
+              <Edit3 size={14} />
+            </button>
+          </div>
+
+          {/* Dados Pessoais */}
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-white">{userData.name}</h1>
+              <span className="badge badge-verified">
+                <ShieldCheck size={11} /> Conta Verificada
+              </span>
+            </div>
+
+            <p className="text-xs font-semibold text-cyan-400 mb-3">{userData.role}</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-300">
+              <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
+                <span className="text-[10px] text-slate-500 uppercase block font-semibold">E-mail</span>
+                <span className="truncate block">{userData.email}</span>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
+                <span className="text-[10px] text-slate-500 uppercase block font-semibold">WhatsApp</span>
+                <span>{userData.phone}</span>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
+                <span className="text-[10px] text-slate-500 uppercase block font-semibold">CPF Cadastrado</span>
+                <span>{userData.cpf}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {savedSuccess && (
+        <div className="mb-4 p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+          <CheckCircle2 size={16} /> Preferências salvas com sucesso!
+        </div>
+      )}
+
+      {/* ── ABAS DE NAVEGAÇÃO INTERNA ── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 border-b border-slate-800 scrollbar-none">
+        <button
+          onClick={() => setActiveTab('patient')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+            activeTab === 'patient'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md'
+              : 'bg-slate-900/70 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <HeartHandshake size={15} />
+          Ficha do Familiar / Paciente
+        </button>
+
+        <button
+          onClick={() => setActiveTab('address')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+            activeTab === 'address'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md'
+              : 'bg-slate-900/70 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <MapPin size={15} />
+          Endereço de Atendimento
+        </button>
+
+        <button
+          onClick={() => setActiveTab('payment')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+            activeTab === 'payment'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md'
+              : 'bg-slate-900/70 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <CreditCard size={15} />
+          Pagamentos & Reembolso
+        </button>
+
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+            activeTab === 'settings'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md'
+              : 'bg-slate-900/70 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <Settings size={15} />
+          Configurações & Notificações
+        </button>
+      </div>
+
+      {/* ── CONTEÚDO DAS ABAS ── */}
+
+      {/* ABA 1: FICHA DO PACIENTE */}
+      {activeTab === 'patient' && (
+        <div className="glass-card-static p-6 sm:p-8 rounded-3xl space-y-6">
+          <div className="flex items-center justify-between">
+            <SectionTitle subtitle="Estes dados auxiliam o profissional de saúde a preparar os materiais adequados">
+              Ficha Clínica do Paciente Atendido
+            </SectionTitle>
+            <button
+              onClick={() => alert("Modo de edição da ficha do paciente habilitado.")}
+              className="text-xs text-cyan-400 font-semibold hover:underline flex items-center gap-1"
+            >
+              <Edit3 size={13} /> Editar dados
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                Nome do Paciente / Parentesco
+              </span>
+              <p className="text-sm font-bold text-white">
+                {userData.patient.name} ({userData.patient.kinship})
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">{userData.patient.age} anos</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                Convênio / Plano de Saúde
+              </span>
+              <p className="text-sm font-bold text-white">{userData.patient.healthInsurance}</p>
+              <p className="text-xs text-emerald-400 mt-0.5">Emite relatório para reembolso</p>
+            </div>
+
+            <div className="sm:col-span-2 p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                Diagnóstico Principal & Histórico Clínico
+              </span>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {userData.patient.condition}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                Locomoção e Mobilidade
+              </span>
+              <p className="text-xs text-slate-300">{userData.patient.mobility}</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                Alergias / Cuidados Críticos
+              </span>
+              <p className="text-xs text-amber-400 font-semibold flex items-center gap-1.5">
+                <AlertCircle size={14} /> {userData.patient.allergies}
+              </p>
+            </div>
+
+            <div className="sm:col-span-2 p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Contato de Emergência Secundário
+                </span>
+                <p className="text-xs sm:text-sm font-semibold text-white mt-0.5">
+                  {userData.patient.emergencyContact}
+                </p>
+              </div>
+              <Phone size={18} className="text-cyan-400" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ABA 2: ENDEREÇOS */}
+      {activeTab === 'address' && (
+        <div className="glass-card-static p-6 sm:p-8 rounded-3xl space-y-6">
+          <div className="flex items-center justify-between">
+            <SectionTitle subtitle="Locais onde os profissionais comparecerão para os plantões">
+              Endereços Cadastrados
+            </SectionTitle>
+            <button
+              onClick={() => alert("Formulário de novo endereço.")}
+              className="btn-secondary text-xs py-2 px-3 rounded-xl flex items-center gap-1.5"
+            >
+              <Plus size={14} /> Adicionar Endereço
+            </button>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-slate-900/90 border border-cyan-500/40 relative">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex items-center gap-2">
+                <MapPin size={18} className="text-cyan-400" />
+                <span className="text-sm font-bold text-white">Residência Principal (Casa do Pai)</span>
+              </div>
+              <span className="badge badge-verified">Padrão</span>
+            </div>
+            <p className="text-xs text-slate-300 pl-6 leading-relaxed mb-3">
+              {userData.address}
+            </p>
+            <div className="flex items-center gap-3 pl-6 text-xs text-cyan-400">
+              <button onClick={() => alert("Editar endereço")} className="hover:underline">
+                Editar endereço
+              </button>
+              <span>•</span>
+              <span className="text-slate-500">Ponto de referência: Próximo à estação Paulista</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ABA 3: PAGAMENTOS */}
+      {activeTab === 'payment' && (
+        <div className="glass-card-static p-6 sm:p-8 rounded-3xl space-y-6">
+          <SectionTitle subtitle="Gerencie seus métodos para pagamentos e recebimento de reembolsos">
+            Formas de Pagamento & Carteira
+          </SectionTitle>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+              <div className="flex items-center gap-2 text-cyan-400 mb-2">
+                <CreditCard size={18} />
+                <span className="text-xs font-bold uppercase tracking-wider">Cartão Salvo</span>
+              </div>
+              <p className="text-sm font-bold text-white mb-1">{userData.paymentMethod}</p>
+              <p className="text-xs text-slate-400">Expira em 08/2029</p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+              <div className="flex items-center gap-2 text-cyan-400 mb-2">
+                <QrCode size={18} />
+                <span className="text-xs font-bold uppercase tracking-wider">Chave Pix para Estorno</span>
+              </div>
+              <p className="text-sm font-bold text-white mb-1">{userData.pixKey}</p>
+              <p className="text-xs text-emerald-400">Reembolso em até 10 minutos se houver cancelamento</p>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FileText size={20} className="text-cyan-400" />
+              <div>
+                <p className="text-xs font-bold text-white">Notas Fiscais e Relatórios para o Convênio</p>
+                <p className="text-[11px] text-slate-400">Baixe os comprovantes detalhados com CRM/COREN para reembolso</p>
+              </div>
+            </div>
+            <button
+              onClick={() => alert("Histórico de notas fiscais emitidas.")}
+              className="btn-secondary text-xs py-2 px-3 rounded-xl"
+            >
+              Visualizar Recibos
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ABA 4: CONFIGURAÇÕES & NOTIFICAÇÕES */}
+      {activeTab === 'settings' && (
+        <div className="glass-card-static p-6 sm:p-8 rounded-3xl space-y-6">
+          <SectionTitle subtitle="Ajuste suas notificações e preferências de segurança">
+            Configurações da Conta
+          </SectionTitle>
+
+          {/* Notificações */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Notificações de Atendimento
+            </h4>
+
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold text-white">Avisos via WhatsApp em tempo real</p>
+                <p className="text-[11px] text-slate-400">Receba aviso quando o profissional sair e chegar ao local.</p>
+              </div>
+              <button
+                onClick={() => toggleNotif('whatsappUpdates')}
+                className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer border-none ${
+                  notifications.whatsappUpdates ? 'bg-cyan-500' : 'bg-slate-700'
+                }`}
+              >
+                <span
+                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                    notifications.whatsappUpdates ? 'right-1' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold text-white">Relatório diário de evolução por e-mail</p>
+                <p className="text-[11px] text-slate-400">Resumo dos sinais vitais, medicamentos administrados e evolução clínica.</p>
+              </div>
+              <button
+                onClick={() => toggleNotif('emailReports')}
+                className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer border-none ${
+                  notifications.emailReports ? 'bg-cyan-500' : 'bg-slate-700'
+                }`}
+              >
+                <span
+                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                    notifications.emailReports ? 'right-1' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* Segurança */}
+          <div className="pt-4 border-t border-slate-800 space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Segurança & Acesso
+            </h4>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => alert("Instruções de redefinição enviadas para seu e-mail.")}
+                className="btn-secondary text-xs py-2.5 px-4 rounded-xl"
+              >
+                Alterar Senha de Acesso
+              </button>
+              <button
+                onClick={() => alert("Autenticação em 2 fatores já está ativa para este número.")}
+                className="btn-secondary text-xs py-2.5 px-4 rounded-xl text-emerald-400 border-emerald-500/30"
+              >
+                <ShieldCheck size={14} /> Autenticação 2FA Ativada
+              </button>
+            </div>
+          </div>
+
+          {/* Logout */}
+          <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
+            <p className="text-xs text-slate-500">Versão da Plataforma 2.4.0 (Conforme LGPD)</p>
+            <button
+              onClick={() => {
+                if (confirm("Deseja realmente sair da sua conta?")) {
+                  onBack();
+                }
+              }}
+              className="text-xs font-semibold text-rose-400 hover:text-rose-300 flex items-center gap-1.5 cursor-pointer bg-transparent border-none"
+            >
+              <LogOut size={14} /> Sair da Conta
+            </button>
+          </div>
+        </div>
+      )}
+
+    </div>
   );
 }
 
@@ -558,7 +954,7 @@ function HomeScreen({ professionals, onSelect }) {
   return (
     <div className="animate-fade-in space-y-10">
 
-      {/* ── HERO BANNER INSTITUCIONAL (DESIGN ELEGANTE PARA DESKTOP & MOBILE) ── */}
+      {/* ── HERO BANNER INSTITUCIONAL ── */}
       <section
         className="rounded-3xl p-6 sm:p-10 relative overflow-hidden border"
         style={{
@@ -612,7 +1008,7 @@ function HomeScreen({ professionals, onSelect }) {
         </div>
       </section>
 
-      {/* ── BARRA DE BUSCA & FILTROS (ESPAÇOSO EM DESKTOP) ── */}
+      {/* ── BARRA DE BUSCA & FILTROS ── */}
       <section className="space-y-4">
         <div
           className="p-4 sm:p-5 rounded-2xl border"
@@ -1207,7 +1603,6 @@ function ProfileScreen({ professional: p, onBack, onRequest }) {
       </div>
 
       {/* ── BARRA FIXA INFERIOR EXCLUSIVA DO CELULAR (MOBILE-ONLY) ── */}
-      {/* Com espaçamento e blur, o padding pb-36 no container garante que nunca fique em cima do texto das avaliações! */}
       <div
         className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t"
         style={{
@@ -1250,8 +1645,6 @@ function ProfileScreen({ professional: p, onBack, onRequest }) {
 
 /* ════════════════════════════════════════════
    TELA 3 — SOLICITAÇÃO DE ATENDIMENTO
-   (COM DATA, HORÁRIO DE INÍCIO E FIM, E CÁLCULO
-    EXATO DE HORAS REQUISITADO PELO USUÁRIO)
    ════════════════════════════════════════════ */
 
 function RequestScreen({ professional: p, onBack, onCreated }) {
@@ -1260,7 +1653,7 @@ function RequestScreen({ professional: p, onBack, onCreated }) {
   const [date, setDate] = useState(todayStr);
   const [start, setStart] = useState('08:00');
   const [end, setEnd] = useState('14:00');
-  const [address, setAddress] = useState('Rua Bela Cintra, 1420 - Jardins, São Paulo');
+  const [address, setAddress] = useState('Rua Bela Cintra, 1420, Apto 82 - Jardins, São Paulo');
   const [need, setNeed] = useState('');
   const [payment, setPayment] = useState('pix');
   const [loading, setLoading] = useState(false);
@@ -1274,7 +1667,6 @@ function RequestScreen({ professional: p, onBack, onCreated }) {
     let startMinutes = startH * 60 + startM;
     let endMinutes = endH * 60 + endM;
 
-    // Se o horário de fim for menor que o início, consideramos plantão noturno até o dia seguinte
     if (endMinutes <= startMinutes) {
       endMinutes += 24 * 60;
     }
@@ -1353,7 +1745,7 @@ function RequestScreen({ professional: p, onBack, onCreated }) {
               </div>
             </div>
 
-            {/* Período do Atendimento (Data, Início e Fim) */}
+            {/* Período do Atendimento */}
             <div className="glass-card-static p-6 rounded-2xl space-y-4">
               <SectionTitle subtitle="Informe o dia e a janela exata de horas necessárias">
                 Data e Horário do Atendimento
@@ -1677,7 +2069,7 @@ function OrdersScreen({ orders, onChat, onFinalize, onNewSearch }) {
                   </span>
                 </div>
 
-                {/* Dados da Programação (Data, Início e Fim) */}
+                {/* Dados da Programação */}
                 <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-xs text-slate-300">
                   <div className="flex items-center gap-2">
                     <Calendar size={14} className="text-cyan-400 shrink-0" />
@@ -1793,7 +2185,7 @@ function ChatScreen({ order, onBack }) {
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-1 text-slate-400 hover:text-white transition-colors"
+            className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer bg-transparent border-none"
           >
             <ChevronLeft size={20} />
           </button>
