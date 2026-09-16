@@ -1,134 +1,190 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, MapPin, MessageCircle, Star, ShieldCheck, UserPlus, Clock, CreditCard, QrCode, CheckCircle2, ChevronLeft, Send } from 'lucide-react';
+import {
+  Search, MapPin, MessageCircle, Star, ShieldCheck, Clock,
+  CreditCard, QrCode, CheckCircle2, ChevronLeft, Send,
+  ChevronRight, Filter, Zap, Heart, X, ArrowRight
+} from 'lucide-react';
 import { professionalsData } from './mock/professionals';
 
+/* ════════════════════════════════════════════
+   APP PRINCIPAL
+   ════════════════════════════════════════════ */
+
 export default function App() {
-  const [fontSize, setFontSize] = useState(1);
+  const [fontScale, setFontScale] = useState(1);
   const rootRef = useRef(null);
 
   useEffect(() => {
     if (rootRef.current) {
-      rootRef.current.style.fontSize = `${14 * fontSize}px`;
+      rootRef.current.style.fontSize = `${16 * fontScale}px`;
     }
-  }, [fontSize]);
+  }, [fontScale]);
 
-  const increaseFontSize = () => setFontSize(prev => prev < 1.4 ? prev + 0.1 : 1);
+  const cycleFontSize = () =>
+    setFontScale(prev => (prev >= 1.3 ? 1 : +(prev + 0.15).toFixed(2)));
 
-  const [currentScreen, setCurrentScreen] = useState('home');
-  const [selectedProfessional, setSelectedProfessional] = useState(null);
+  const [screen, setScreen] = useState('home');
+  const [selectedPro, setSelectedPro] = useState(null);
   const [orders, setOrders] = useState([]);
-  const [activeChatOrder, setActiveChatOrder] = useState(null);
-  const [orderToFinalize, setOrderToFinalize] = useState(null);
+  const [chatOrder, setChatOrder] = useState(null);
+  const [finalizeOrder, setFinalizeOrder] = useState(null);
 
-  const professionals = professionalsData;
-
-  const navigateTo = (screen) => setCurrentScreen(screen);
+  const nav = (s) => {
+    setScreen(s);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
-    <div ref={rootRef} className="min-h-screen bg-[var(--bg)] text-[var(--text)] min-w-[360px] pb-20">
-      <header className="sticky top-0 z-40 bg-[var(--bg)]/90 backdrop-blur-md border-b border-[var(--border)] px-4 py-4 mb-6">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[var(--accent)] font-bold text-xl">
-            <HeartPulseIcon className="w-6 h-6" />
-            CuidaCasa
+    <div ref={rootRef} className="min-h-screen bg-grid" style={{ background: 'var(--bg-primary)' }}>
+
+      {/* ── HEADER ── */}
+      <header style={{
+        position: 'sticky', top: 0, zIndex: 50,
+        background: 'rgba(6, 10, 19, 0.85)',
+        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <div style={{
+          maxWidth: 480, margin: '0 auto',
+          padding: '14px 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'linear-gradient(135deg, #2563EB, #00D4FF)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 16px rgba(0, 212, 255, 0.25)',
+            }}>
+              <HeartPulseIcon style={{ width: 20, height: 20, color: 'white' }} />
+            </div>
+            <span style={{
+              fontWeight: 800, fontSize: '1.15rem',
+              background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              letterSpacing: '-0.03em',
+            }}>
+              CuidaCasa
+            </span>
           </div>
+
           <button
-            onClick={increaseFontSize}
-            className="p-2 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--text)] hover:text-[var(--accent)] transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-            title="Aumentar tamanho da fonte"
+            onClick={cycleFontSize}
+            style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              color: fontScale > 1 ? 'var(--accent)' : 'var(--text-secondary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', transition: 'all 0.25s',
+              fontSize: '0.8rem', fontWeight: 700,
+            }}
+            title={`Fonte: ${Math.round(fontScale * 100)}%`}
             aria-label="Aumentar tamanho da fonte"
           >
-            <span className="font-bold flex items-center gap-1 text-sm">
-              A <span className="text-xs">+</span>
-            </span>
+            A+
           </button>
         </div>
       </header>
 
-      <main className="max-w-md mx-auto w-full px-4">
-        {currentScreen === 'home' && (
-          <HomeScreen 
-            professionals={professionals} 
-            onSelectProfessional={(prof) => {
-              setSelectedProfessional(prof);
-              navigateTo('profile');
-            }} 
+      {/* ── CONTEÚDO ── */}
+      <main style={{ maxWidth: 480, margin: '0 auto', padding: '20px 20px 100px' }}>
+        {screen === 'home' && (
+          <HomeScreen
+            professionals={professionalsData}
+            onSelect={(p) => { setSelectedPro(p); nav('profile'); }}
           />
         )}
-        
-        {currentScreen === 'profile' && (
-          <ProfessionalProfile 
-            professional={selectedProfessional} 
-            onBack={() => navigateTo('home')}
-            onRequest={() => navigateTo('request')} 
+        {screen === 'profile' && (
+          <ProfileScreen
+            professional={selectedPro}
+            onBack={() => nav('home')}
+            onRequest={() => nav('request')}
           />
         )}
-        
-        {currentScreen === 'request' && (
-          <RequestScreen 
-            professional={selectedProfessional}
-            onBack={() => navigateTo('profile')}
-            onOrderCreated={(order) => {
-              const newOrders = [{ ...order, status: 'Confirmado', id: Date.now() }, ...orders];
-              setOrders(newOrders);
-              navigateTo('orders');
-            }} 
-          />
-        )}
-        
-        {currentScreen === 'orders' && (
-          <OrdersScreen 
-            orders={orders} 
-            onOpenChat={(order) => {
-              setActiveChatOrder(order);
-              navigateTo('chat');
-            }}
-            onFinalize={(order) => {
-              setOrderToFinalize(order);
-              navigateTo('finalization');
+        {screen === 'request' && (
+          <RequestScreen
+            professional={selectedPro}
+            onBack={() => nav('profile')}
+            onCreated={(order) => {
+              setOrders([{ ...order, id: Date.now(), status: 'Confirmado' }, ...orders]);
+              nav('orders');
             }}
           />
         )}
-        
-        {currentScreen === 'chat' && (
-          <ChatScreen 
-            order={activeChatOrder} 
-            onBack={() => navigateTo('orders')} 
+        {screen === 'orders' && (
+          <OrdersScreen
+            orders={orders}
+            onChat={(o) => { setChatOrder(o); nav('chat'); }}
+            onFinalize={(o) => { setFinalizeOrder(o); nav('finalize'); }}
           />
         )}
-
-        {currentScreen === 'finalization' && (
-          <FinalizationScreen 
-            order={orderToFinalize}
-            onRatingSubmit={(rating, comment) => {
-              setOrders(orders.map(o => o.id === orderToFinalize.id ? { ...o, status: 'Concluído' } : o));
-              navigateTo('orders');
-            }} 
-            onBack={() => navigateTo('orders')}
+        {screen === 'chat' && (
+          <ChatScreen order={chatOrder} onBack={() => nav('orders')} />
+        )}
+        {screen === 'finalize' && (
+          <FinalizeScreen
+            order={finalizeOrder}
+            onBack={() => nav('orders')}
+            onSubmit={() => {
+              setOrders(orders.map(o => o.id === finalizeOrder.id ? { ...o, status: 'Concluído' } : o));
+              nav('orders');
+            }}
           />
         )}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-[var(--card)] border-t border-[var(--border)] z-40 pb-safe">
-        <div className="max-w-md mx-auto flex justify-around">
-          <button 
-            onClick={() => navigateTo('home')}
-            className={`flex flex-col items-center py-3 px-4 flex-1 ${currentScreen === 'home' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-white transition-colors'}`}
-          >
-            <Search className="h-6 w-6 mb-1" />
-            <span className="text-[10px] font-medium uppercase tracking-wider">Buscar</span>
-          </button>
-          <button 
-            onClick={() => navigateTo('orders')}
-            className={`flex flex-col items-center py-3 px-4 flex-1 ${currentScreen === 'orders' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-white transition-colors'}`}
-          >
-            <Clock className="h-6 w-6 mb-1" />
-            <span className="text-[10px] font-medium uppercase tracking-wider">Pedidos</span>
-          </button>
+      {/* ── BOTTOM NAV ── */}
+      <nav style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+        background: 'rgba(6, 10, 19, 0.92)',
+        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        borderTop: '1px solid var(--border)',
+      }}>
+        <div style={{
+          maxWidth: 480, margin: '0 auto',
+          display: 'flex', justifyContent: 'space-around',
+          padding: '8px 0 max(8px, env(safe-area-inset-bottom))',
+        }}>
+          <NavBtn icon={<Search size={22} />} label="Buscar" active={screen === 'home'} onClick={() => nav('home')} />
+          <NavBtn icon={<Clock size={22} />} label="Pedidos" active={screen === 'orders'} onClick={() => nav('orders')} badge={orders.filter(o => o.status === 'Confirmado').length || null} />
         </div>
       </nav>
     </div>
+  );
+}
+
+/* ════════════════════════════════════════════
+   COMPONENTES AUXILIARES
+   ════════════════════════════════════════════ */
+
+function NavBtn({ icon, label, active, onClick, badge }) {
+  return (
+    <button onClick={onClick} style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      gap: 2, padding: '6px 20px', border: 'none', background: 'transparent',
+      color: active ? 'var(--accent)' : 'var(--text-muted)',
+      cursor: 'pointer', transition: 'color 0.2s', position: 'relative',
+    }}>
+      {badge && (
+        <span style={{
+          position: 'absolute', top: 2, right: 14,
+          width: 18, height: 18, borderRadius: '50%',
+          background: 'var(--danger)', color: 'white',
+          fontSize: '0.6rem', fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>{badge}</span>
+      )}
+      {icon}
+      <span style={{
+        fontSize: '0.6rem', fontWeight: 600, textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+      }}>{label}</span>
+      {active && <span style={{
+        width: 20, height: 3, borderRadius: 2,
+        background: 'var(--accent)', marginTop: 2,
+      }} />}
+    </button>
   );
 }
 
@@ -141,102 +197,191 @@ function HeartPulseIcon(props) {
   );
 }
 
-function HomeScreen({ professionals, onSelectProfessional }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [distanceFilter, setDistanceFilter] = useState('');
-  const [availabilityFilter, setAvailabilityFilter] = useState(false);
+function BackButton({ onClick, label = 'Voltar' }) {
+  return (
+    <button onClick={onClick} style={{
+      display: 'flex', alignItems: 'center', gap: 6,
+      background: 'none', border: 'none', color: 'var(--text-secondary)',
+      cursor: 'pointer', padding: '8px 0', marginBottom: 16,
+      fontSize: '0.875rem', fontWeight: 500, transition: 'color 0.2s',
+    }}
+    onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+    >
+      <ChevronLeft size={18} /> {label}
+    </button>
+  );
+}
 
-  const filteredProfessionals = professionals.filter(p => {
-    const term = searchTerm.toLowerCase();
-    const matchesSearch = p.name.toLowerCase().includes(term) || p.specialty.toLowerCase().includes(term);
-    const matchesDistance = !distanceFilter || parseFloat(p.distance) <= parseFloat(distanceFilter);
-    const matchesAvailability = !availabilityFilter || p.available;
-    return matchesSearch && matchesDistance && matchesAvailability;
+function StarRating({ rating, size = 14 }) {
+  return (
+    <div style={{ display: 'flex', gap: 2 }}>
+      {[1,2,3,4,5].map(i => (
+        <Star key={i} size={size}
+          fill={i <= rating ? '#FBBF24' : 'transparent'}
+          color={i <= rating ? '#FBBF24' : '#475569'}
+          strokeWidth={1.5}
+        />
+      ))}
+    </div>
+  );
+}
+
+function SectionTitle({ children }) {
+  return (
+    <h3 style={{
+      fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
+      letterSpacing: '0.1em', color: 'var(--text-muted)',
+      marginBottom: 12, paddingBottom: 8,
+      borderBottom: '1px solid var(--border)',
+    }}>{children}</h3>
+  );
+}
+
+/* ════════════════════════════════════════════
+   TELA 1 — HOME / BUSCA
+   ════════════════════════════════════════════ */
+
+function HomeScreen({ professionals, onSelect }) {
+  const [search, setSearch] = useState('');
+  const [distance, setDistance] = useState('');
+  const [availableOnly, setAvailableOnly] = useState(false);
+
+  const filtered = professionals.filter(p => {
+    const q = search.toLowerCase();
+    const matchSearch = p.name.toLowerCase().includes(q) || p.specialty.toLowerCase().includes(q);
+    const matchDist = !distance || parseFloat(p.distance) <= parseFloat(distance);
+    const matchAvail = !availableOnly || p.available;
+    return matchSearch && matchDist && matchAvail;
   });
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <h1 className="text-2xl font-bold mb-2">Cuidadores de Confiança</h1>
-      <p className="text-[var(--text-muted)] text-sm mb-6">Encontre o profissional ideal para sua família.</p>
-      
-      <div className="space-y-3 mb-8">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--text-muted)]" />
-          <input
-            type="text"
-            placeholder="Buscar especialidade (ex: Enfermeiro, Cuidador)"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="input-field pl-10 w-full"
-          />
-        </div>
-        
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <select
-              value={distanceFilter}
-              onChange={(e) => setDistanceFilter(e.target.value)}
-              className="select-field text-sm"
-            >
-              <option value="">Distância: Qualquer</option>
-              <option value="5">Até 5km</option>
-              <option value="10">Até 10km</option>
-              <option value="20">Até 20km</option>
-            </select>
-          </div>
-          
-          <button
-            onClick={() => setAvailabilityFilter(!availabilityFilter)}
-            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              availabilityFilter 
-                ? 'bg-[var(--accent)]/20 border-[var(--accent)] text-[var(--accent)]' 
-                : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-muted)]'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            Agora
-          </button>
-        </div>
+    <div className="animate-fade-in-up">
+      {/* Hero section */}
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: '1.65rem', fontWeight: 800, marginBottom: 6, lineHeight: 1.15 }}>
+          Encontre quem cuida
+          <br />
+          <span style={{
+            background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          }}>
+            da sua família.
+          </span>
+        </h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          Profissionais verificados, a poucos cliques de distância.
+        </p>
       </div>
 
-      <div className="space-y-4">
-        {filteredProfessionals.length > 0 ? (
-          filteredProfessionals.map((prof) => (
-            <div key={prof.id} className="card overflow-hidden cursor-pointer group" onClick={() => onSelectProfessional(prof)}>
-              <div className="p-4 flex gap-4">
-                <div className="relative">
-                  <img src={prof.image} alt={prof.name} className="w-20 h-20 rounded-xl object-cover border border-[var(--border)]" />
-                  {prof.available && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[var(--success)] rounded-full border-2 border-[var(--card)]" title="Disponível agora"></div>
+      {/* Search Bar */}
+      <div style={{ position: 'relative', marginBottom: 12 }}>
+        <Search size={18} style={{
+          position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+          color: 'var(--text-muted)',
+        }} />
+        <input
+          type="text" placeholder="Buscar por especialidade ou nome..."
+          value={search} onChange={e => setSearch(e.target.value)}
+          className="input-field"
+          style={{ paddingLeft: 42, background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)' }}
+        />
+      </div>
+
+      {/* Filters */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
+        <select
+          value={distance} onChange={e => setDistance(e.target.value)}
+          className="select-field"
+          style={{ flex: 1, background: 'var(--bg-card)', borderRadius: 'var(--radius-md)' }}
+        >
+          <option value="">Distância: Todas</option>
+          <option value="3">Até 3 km</option>
+          <option value="5">Até 5 km</option>
+          <option value="10">Até 10 km</option>
+        </select>
+        <button
+          onClick={() => setAvailableOnly(!availableOnly)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '10px 14px', borderRadius: 'var(--radius-md)',
+            border: `1px solid ${availableOnly ? 'var(--accent)' : 'var(--border)'}`,
+            background: availableOnly ? 'var(--accent-glow)' : 'var(--bg-card)',
+            color: availableOnly ? 'var(--accent)' : 'var(--text-secondary)',
+            cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600,
+            transition: 'all 0.25s', whiteSpace: 'nowrap',
+          }}
+        >
+          <Zap size={14} /> Agora
+        </button>
+      </div>
+
+      {/* Results */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {filtered.length > 0 ? (
+          filtered.map((p, idx) => (
+            <div key={p.id}
+              className={`glass-card animate-fade-in-up stagger-${idx + 1}`}
+              style={{ cursor: 'pointer', overflow: 'hidden' }}
+              onClick={() => onSelect(p)}
+            >
+              <div style={{ padding: 18, display: 'flex', gap: 16 }}>
+                {/* Avatar */}
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <img src={p.image} alt={p.name} style={{
+                    width: 72, height: 72, borderRadius: 'var(--radius-md)',
+                    objectFit: 'cover',
+                    border: '2px solid var(--border)',
+                  }} />
+                  {p.available && (
+                    <div style={{
+                      position: 'absolute', bottom: -3, right: -3,
+                      width: 16, height: 16, borderRadius: '50%',
+                      background: 'var(--success)',
+                      border: '3px solid var(--bg-card)',
+                      boxShadow: '0 0 8px var(--success-glow)',
+                    }} />
                   )}
                 </div>
-                
-                <div className="flex-1">
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-semibold text-lg leading-tight group-hover:text-[var(--accent)] transition-colors">{prof.name}</h3>
-                    <div className="flex items-center gap-1 text-sm bg-[var(--bg)] px-2 py-0.5 rounded-md text-yellow-400 font-medium border border-[#334155]/50">
-                      <Star className="h-3 w-3 fill-current" />
-                      {prof.rating}
+
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{p.name}</h3>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      background: 'rgba(251, 191, 36, 0.1)',
+                      border: '1px solid rgba(251, 191, 36, 0.2)',
+                      padding: '3px 8px', borderRadius: 'var(--radius-full)',
+                      fontSize: '0.75rem', fontWeight: 700, color: '#FBBF24',
+                    }}>
+                      <Star size={11} fill="#FBBF24" color="#FBBF24" /> {p.rating}
                     </div>
                   </div>
-                  
-                  <p className="text-[var(--text-muted)] text-sm mb-2">{prof.specialty}</p>
-                  
-                  {prof.isVerified && (
-                    <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-[var(--accent)] bg-[var(--accent)]/10 w-fit px-2 py-1 rounded mb-2">
-                      <ShieldCheck className="h-3 w-3" />
-                      COREN/CREFITO Verificado
-                    </div>
+
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', margin: '0 0 8px' }}>{p.specialty}</p>
+
+                  {p.isVerified && (
+                    <span className="badge badge-verified" style={{ marginBottom: 10, display: 'inline-flex' }}>
+                      <ShieldCheck size={11} /> Verificado
+                    </span>
                   )}
-                  
-                  <div className="flex justify-between items-end mt-3 border-t border-[var(--border)]/50 pt-3">
-                    <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
-                      <MapPin className="h-3 w-3" />
-                      {prof.distance} km
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs text-[var(--text-muted)]">A partir de</span>
-                      <p className="text-[var(--accent)] font-bold">R$ {prof.hourlyRate}<span className="text-xs font-normal">/h</span></p>
+
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+                    paddingTop: 10, borderTop: '1px solid var(--border)',
+                    marginTop: 4,
+                  }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      <MapPin size={12} /> {p.distance} km
+                    </span>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block' }}>a partir de</span>
+                      <span style={{
+                        fontSize: '1.05rem', fontWeight: 800,
+                        background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
+                        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                      }}>R$ {p.hourlyRate}<span style={{ fontSize: '0.7rem', fontWeight: 500 }}>/h</span></span>
                     </div>
                   </div>
                 </div>
@@ -244,9 +389,12 @@ function HomeScreen({ professionals, onSelectProfessional }) {
             </div>
           ))
         ) : (
-          <div className="text-center py-12 card border-dashed">
-            <Search className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-3 opacity-50" />
-            <p className="text-[var(--text-muted)]">Nenhum profissional encontrado com esses filtros.</p>
+          <div className="glass-card-static" style={{
+            padding: '48px 24px', textAlign: 'center',
+            border: '1px dashed var(--border)',
+          }}>
+            <Search size={32} style={{ color: 'var(--text-muted)', opacity: 0.4, margin: '0 auto 12px' }} />
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Nenhum profissional encontrado.</p>
           </div>
         )}
       </div>
@@ -254,287 +402,410 @@ function HomeScreen({ professionals, onSelectProfessional }) {
   );
 }
 
-function ProfessionalProfile({ professional, onBack, onRequest }) {
-  if (!professional) return null;
-  
+/* ════════════════════════════════════════════
+   TELA 2 — PERFIL DO PROFISSIONAL
+   ════════════════════════════════════════════ */
+
+function ProfileScreen({ professional: p, onBack, onRequest }) {
+  if (!p) return null;
+  const avgRating = (p.reviews.reduce((a, r) => a + r.rating, 0) / p.reviews.length).toFixed(1);
+
   return (
-    <div className="animate-in slide-in-from-right duration-300">
-      <button onClick={onBack} className="flex items-center gap-2 text-[var(--text-muted)] hover:text-white mb-4 -ml-2 p-2">
-        <ChevronLeft className="w-5 h-5" />
-        Voltar
-      </button>
-      
-      <div className="card overflow-hidden mb-6">
-        <div className="h-24 bg-gradient-to-r from-[#1E293B] to-[#0F172A] relative"></div>
-        <div className="px-5 pb-5 relative">
-          <img 
-            src={professional.image} 
-            alt={professional.name} 
-            className="w-24 h-24 rounded-2xl object-cover border-4 border-[var(--card)] absolute -top-12 shadow-lg" 
-          />
-          
-          <div className="flex justify-end pt-3">
-            <div className="flex items-center gap-1 px-3 py-1 bg-yellow-400/10 text-yellow-400 rounded-lg font-bold border border-yellow-400/20">
-              <Star className="h-4 w-4 fill-current" />
-              {professional.rating}
-            </div>
+    <div className="animate-slide-right">
+      <BackButton onClick={onBack} />
+
+      {/* Header Card */}
+      <div className="glass-card-static" style={{ overflow: 'hidden', marginBottom: 20 }}>
+        {/* Gradient Banner */}
+        <div style={{
+          height: 80,
+          background: 'linear-gradient(135deg, #0B101D 0%, #1E3A5F 50%, #0B101D 100%)',
+          position: 'relative',
+        }}>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(ellipse at 50% 0%, rgba(0,212,255,0.12), transparent 70%)',
+          }} />
+        </div>
+
+        <div style={{ padding: '0 24px 24px', position: 'relative' }}>
+          {/* Avatar */}
+          <img src={p.image} alt={p.name} style={{
+            width: 88, height: 88, borderRadius: 'var(--radius-lg)',
+            objectFit: 'cover',
+            border: '4px solid var(--bg-card)',
+            marginTop: -44, position: 'relative',
+            boxShadow: 'var(--shadow-lg)',
+          }} />
+
+          {/* Rating floating */}
+          <div style={{
+            position: 'absolute', top: -20, right: 24,
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'rgba(251, 191, 36, 0.1)',
+            border: '1px solid rgba(251, 191, 36, 0.2)',
+            padding: '8px 14px', borderRadius: 'var(--radius-full)',
+            backdropFilter: 'blur(8px)',
+          }}>
+            <Star size={16} fill="#FBBF24" color="#FBBF24" />
+            <span style={{ fontSize: '1rem', fontWeight: 800, color: '#FBBF24' }}>{avgRating}</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({p.reviews.length})</span>
           </div>
-          
-          <div className="mt-4">
-            <h2 className="text-2xl font-bold">{professional.name}</h2>
-            <p className="text-[var(--accent)] font-medium mb-3">{professional.specialty}</p>
-            
-            <div className="flex flex-wrap gap-2 mb-4">
-              {professional.isVerified && (
-                <span className="flex items-center gap-1 text-[11px] uppercase font-bold text-[var(--success)] bg-[var(--success)]/10 px-2 py-1 rounded border border-[var(--success)]/20">
-                  <ShieldCheck className="h-3 w-3" /> Verificado
+
+          <div style={{ marginTop: 16 }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 4px' }}>{p.name}</h2>
+            <p style={{
+              fontSize: '0.9375rem', fontWeight: 600, margin: '0 0 12px',
+              color: 'var(--accent)',
+            }}>{p.specialty}</p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {p.isVerified && (
+                <span className="badge badge-verified">
+                  <ShieldCheck size={11} /> COREN/CREFITO
                 </span>
               )}
-              <span className="flex items-center gap-1 text-[11px] uppercase font-bold text-[var(--text-muted)] bg-[var(--bg)] px-2 py-1 rounded border border-[var(--border)]">
-                <Clock className="h-3 w-3" /> {professional.experience}
+              <span className="badge" style={{
+                color: 'var(--text-secondary)',
+                background: 'rgba(30, 41, 59, 0.6)',
+                border: '1px solid var(--border)',
+              }}>
+                <Clock size={11} /> {p.experience}
               </span>
-            </div>
-            
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold mb-2 text-[var(--text-muted)] uppercase tracking-wider">Especialidades</h3>
-              <div className="flex flex-wrap gap-2">
-                {professional.areas.map((area, index) => (
-                  <span key={index} className="px-3 py-1.5 rounded-lg bg-[var(--bg)] text-sm border border-[var(--border)]">
-                    {area}
-                  </span>
-                ))}
-              </div>
+              {p.available && (
+                <span className="badge badge-available">
+                  <Zap size={11} /> Disponível
+                </span>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-3">Avaliações das Famílias</h3>
-        <div className="space-y-3">
-          {professional.reviews.map((review, index) => (
-            <div key={index} className="p-4 rounded-xl bg-[var(--card)] border border-[var(--border)]">
-              <div className="flex justify-between items-start mb-2">
-                <p className="font-medium">{review.user}</p>
-                <div className="flex gap-0.5">
-                  {Array(5).fill(0).map((_, i) => (
-                    <Star key={i} className={`h-3 w-3 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-600'}`} />
-                  ))}
-                </div>
+      {/* Especialidades */}
+      <div className="glass-card-static animate-fade-in-up stagger-1" style={{ padding: 20, marginBottom: 20 }}>
+        <SectionTitle>Áreas de Atuação</SectionTitle>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {p.areas.map((a, i) => (
+            <span key={i} style={{
+              padding: '8px 14px', borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border)',
+              fontSize: '0.8125rem', color: 'var(--text-primary)',
+              fontWeight: 500,
+            }}>{a}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Avaliações */}
+      <div className="animate-fade-in-up stagger-2" style={{ marginBottom: 100 }}>
+        <SectionTitle>Avaliações das Famílias</SectionTitle>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {p.reviews.map((r, i) => (
+            <div key={i} className="glass-card-static" style={{ padding: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{r.user}</span>
+                <StarRating rating={r.rating} size={12} />
               </div>
-              <p className="text-[var(--text-muted)] text-sm leading-relaxed">{review.comment}</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', lineHeight: 1.6, margin: 0 }}>
+                "{r.comment}"
+              </p>
             </div>
           ))}
         </div>
       </div>
-      
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-[var(--bg)] border-t border-[var(--border)] z-50 mb-[68px]">
-        <div className="max-w-md mx-auto flex items-center justify-between gap-4">
+
+      {/* CTA fixo */}
+      <div style={{
+        position: 'fixed', bottom: 60, left: 0, right: 0, zIndex: 45,
+        background: 'rgba(6, 10, 19, 0.95)',
+        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        borderTop: '1px solid var(--border)',
+        padding: '14px 20px',
+      }}>
+        <div style={{ maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 16 }}>
           <div>
-            <p className="text-xs text-[var(--text-muted)]">Valor hora</p>
-            <p className="text-xl font-bold text-[var(--accent)]">R$ {professional.hourlyRate}</p>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Valor/hora</span>
+            <p style={{
+              fontSize: '1.25rem', fontWeight: 800, margin: 0,
+              background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            }}>R$ {p.hourlyRate}</p>
           </div>
-          <button onClick={onRequest} className="btn-primary flex-1 py-3 text-lg">
-            Solicitar Atendimento
+          <button onClick={onRequest} className="btn-primary" style={{ flex: 1, padding: '14px 20px', fontSize: '0.9375rem' }}>
+            Solicitar Atendimento <ArrowRight size={18} />
           </button>
         </div>
       </div>
-      {/* spacer for fixed bottom bar */}
-      <div className="h-20"></div>
     </div>
   );
 }
 
-function RequestScreen({ professional, onBack, onOrderCreated }) {
+/* ════════════════════════════════════════════
+   TELA 3 — SOLICITAÇÃO + CHECKOUT SIMULADO
+   ════════════════════════════════════════════ */
+
+function RequestScreen({ professional: p, onBack, onCreated }) {
   const [date, setDate] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [start, setStart] = useState('');
+  const [end, setEnd] = useState('');
   const [address, setAddress] = useState('');
   const [need, setNeed] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('pix');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [payment, setPayment] = useState('pix');
+  const [loading, setLoading] = useState(false);
 
-  // Calculate simulated value (e.g. 4 hours)
-  const durationHours = 4;
-  const totalValue = professional ? professional.hourlyRate * durationHours : 0;
+  const hours = 4;
+  const total = p ? p.hourlyRate * hours : 0;
 
-  const handleSubmit = (e) => {
+  const submit = (e) => {
     e.preventDefault();
-    if (!date || !startTime || !address) return;
-    
-    setIsSubmitting(true);
-    // Simulate network delay
+    if (!date || !start || !address) return;
+    setLoading(true);
     setTimeout(() => {
-      onOrderCreated({
-        professional,
-        date,
-        startTime,
-        endTime,
-        address,
-        need,
-        totalValue,
-        paymentMethod
-      });
-    }, 1500);
+      onCreated({ professional: p, date, startTime: start, endTime: end, address, need, totalValue: total, paymentMethod: payment });
+    }, 1800);
   };
 
   return (
-    <div className="animate-in slide-in-from-right duration-300 pb-10">
-      <button onClick={onBack} className="flex items-center gap-2 text-[var(--text-muted)] hover:text-white mb-4 -ml-2 p-2">
-        <ChevronLeft className="w-5 h-5" />
-        Voltar ao perfil
-      </button>
+    <div className="animate-slide-right">
+      <BackButton onClick={onBack} label="Voltar ao perfil" />
+      <h1 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 20 }}>Agendar Atendimento</h1>
 
-      <h1 className="text-2xl font-bold mb-6">Agendar Atendimento</h1>
-      
-      <div className="card p-4 mb-6 flex items-center gap-4 bg-[#1E293B] border-[#334155]">
-        <img src={professional?.image} className="w-12 h-12 rounded-full object-cover border border-[var(--border)]" alt="" />
+      {/* Profissional selecionado */}
+      <div className="glass-card-static" style={{
+        padding: 16, marginBottom: 24,
+        display: 'flex', alignItems: 'center', gap: 14,
+        borderLeft: '3px solid var(--accent)',
+      }}>
+        <img src={p?.image} alt="" style={{
+          width: 48, height: 48, borderRadius: 'var(--radius-md)',
+          objectFit: 'cover', border: '2px solid var(--border)',
+        }} />
         <div>
-          <p className="font-semibold">{professional?.name}</p>
-          <p className="text-[var(--text-muted)] text-sm">{professional?.specialty}</p>
+          <p style={{ fontWeight: 700, margin: '0 0 2px', fontSize: '0.9375rem' }}>{p?.name}</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', margin: 0 }}>{p?.specialty}</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold border-b border-[var(--border)] pb-2">Detalhes do Serviço</h3>
-          
-          <div className="grid grid-cols-2 gap-3">
+      <form onSubmit={submit}>
+        {/* Detalhes */}
+        <div className="glass-card-static" style={{ padding: 20, marginBottom: 20 }}>
+          <SectionTitle>Detalhes do Serviço</SectionTitle>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
-              <label className="text-[var(--text-muted)] text-xs font-medium uppercase tracking-wider mb-1.5 block">Data</label>
+              <Label>Data</Label>
               <input type="date" required value={date} onChange={e => setDate(e.target.value)} className="input-field" />
             </div>
             <div>
-              <label className="text-[var(--text-muted)] text-xs font-medium uppercase tracking-wider mb-1.5 block">Início</label>
-              <input type="time" required value={startTime} onChange={e => setStartTime(e.target.value)} className="input-field" />
+              <Label>Horário</Label>
+              <input type="time" required value={start} onChange={e => setStart(e.target.value)} className="input-field" />
             </div>
           </div>
-
-          <div>
-            <label className="text-[var(--text-muted)] text-xs font-medium uppercase tracking-wider mb-1.5 block">Endereço Completo</label>
-            <input type="text" required placeholder="Rua, Número, Complemento, Bairro" value={address} onChange={e => setAddress(e.target.value)} className="input-field" />
+          <div style={{ marginBottom: 12 }}>
+            <Label>Endereço Completo</Label>
+            <input type="text" required placeholder="Rua, Nº, Bairro, Cidade" value={address} onChange={e => setAddress(e.target.value)} className="input-field" />
           </div>
-
           <div>
-            <label className="text-[var(--text-muted)] text-xs font-medium uppercase tracking-wider mb-1.5 block">Descrição da Necessidade (Opcional)</label>
-            <textarea 
-              placeholder="Ex: Idoso com mobilidade reduzida, necessita de banho de leito e medicação às 14h."
-              value={need} onChange={e => setNeed(e.target.value)} 
-              rows={3} className="input-field resize-none text-sm"
+            <Label>Descrição da necessidade (Opcional)</Label>
+            <textarea
+              placeholder="Ex: Idoso com mobilidade reduzida, pós-cirurgia de quadril..."
+              value={need} onChange={e => setNeed(e.target.value)}
+              rows={3} className="input-field" style={{ resize: 'none', lineHeight: 1.6 }}
             />
           </div>
         </div>
 
-        <div className="space-y-4 pt-4">
-          <h3 className="text-lg font-semibold border-b border-[var(--border)] pb-2">Pagamento Seguro</h3>
-          
-          <div className="bg-[var(--accent)]/10 border border-[var(--accent)]/30 rounded-lg p-3 flex gap-3 text-sm text-[var(--accent-dark)]">
-            <ShieldCheck className="w-5 h-5 flex-shrink-0 text-[var(--accent)]" />
-            <p className="text-[var(--text)] text-xs">
-              O valor fica <span className="font-bold text-[var(--accent)]">retido com o CuidaCasa</span>. O dinheiro só é liberado ao profissional após a conclusão do serviço e sua aprovação.
+        {/* Pagamento */}
+        <div className="glass-card-static" style={{ padding: 20, marginBottom: 20 }}>
+          <SectionTitle>Pagamento Seguro</SectionTitle>
+
+          {/* Alerta */}
+          <div style={{
+            display: 'flex', gap: 12, padding: 14, borderRadius: 'var(--radius-md)',
+            background: 'var(--accent-glow)',
+            border: '1px solid var(--border-accent)',
+            marginBottom: 16,
+          }}>
+            <ShieldCheck size={20} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
+            <p style={{ color: 'var(--text-primary)', fontSize: '0.8125rem', margin: 0, lineHeight: 1.5 }}>
+              O valor fica <strong style={{ color: 'var(--accent)' }}>retido com o CuidaCasa</strong> e só é liberado ao profissional após sua confirmação de conclusão do serviço.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <button 
-              type="button"
-              onClick={() => setPaymentMethod('pix')}
-              className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${paymentMethod === 'pix' ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--border)] bg-[var(--card)] text-[var(--text-muted)]'}`}
-            >
-              <QrCode className="w-6 h-6 mb-2" />
-              <span className="font-medium text-sm">PIX</span>
-            </button>
-            <button 
-              type="button"
-              onClick={() => setPaymentMethod('card')}
-              className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${paymentMethod === 'card' ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--border)] bg-[var(--card)] text-[var(--text-muted)]'}`}
-            >
-              <CreditCard className="w-6 h-6 mb-2" />
-              <span className="font-medium text-sm">Cartão</span>
-            </button>
+          {/* Método */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+            <PaymentOption icon={<QrCode size={24} />} label="PIX" selected={payment === 'pix'} onClick={() => setPayment('pix')} />
+            <PaymentOption icon={<CreditCard size={24} />} label="Cartão" selected={payment === 'card'} onClick={() => setPayment('card')} />
           </div>
 
-          <div className="card p-4 bg-[#1E293B]">
-            <div className="flex justify-between mb-2 text-sm text-[var(--text-muted)]">
-              <span>Valor por hora</span>
-              <span>R$ {professional?.hourlyRate}</span>
+          {/* Resumo */}
+          <div style={{
+            background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)',
+            padding: 16, border: '1px solid var(--border)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+              <span>Valor por hora</span><span>R$ {p?.hourlyRate}</span>
             </div>
-            <div className="flex justify-between mb-3 text-sm text-[var(--text-muted)]">
-              <span>Duração estimada</span>
-              <span>~{durationHours}h</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+              <span>Duração estimada</span><span>~{hours}h</span>
             </div>
-            <div className="flex justify-between pt-3 border-t border-[var(--border)]">
-              <span className="font-medium">Total a reter</span>
-              <span className="font-bold text-xl text-[var(--accent)]">R$ {totalValue}</span>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              paddingTop: 12, borderTop: '1px solid var(--border)',
+            }}>
+              <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Total a reter</span>
+              <span style={{
+                fontSize: '1.35rem', fontWeight: 800,
+                background: 'linear-gradient(135deg, #00D4FF, #60A5FA)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              }}>R$ {total}</span>
             </div>
           </div>
         </div>
 
-        <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-4 text-lg mt-8 flex justify-center items-center gap-2">
-          {isSubmitting ? (
-            <span className="animate-pulse">Processando...</span>
+        <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', padding: '16px 20px', fontSize: '1rem' }}>
+          {loading ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className="animate-spin" style={{
+                width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)',
+                borderTopColor: 'white', borderRadius: '50%',
+                display: 'inline-block',
+                animation: 'spin 0.8s linear infinite',
+              }} />
+              Processando...
+            </span>
           ) : (
-            <>Pagar e Solicitar <CheckCircle2 className="w-5 h-5" /></>
+            <>Confirmar e Pagar <CheckCircle2 size={18} /></>
           )}
         </button>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </form>
     </div>
   );
 }
 
-function OrdersScreen({ orders, onOpenChat, onFinalize }) {
+function Label({ children }) {
   return (
-    <div className="animate-in fade-in duration-300">
-      <h1 className="text-2xl font-bold mb-6">Meus Pedidos</h1>
-      
+    <label style={{
+      display: 'block', fontSize: '0.6875rem', fontWeight: 700,
+      textTransform: 'uppercase', letterSpacing: '0.08em',
+      color: 'var(--text-muted)', marginBottom: 6,
+    }}>{children}</label>
+  );
+}
+
+function PaymentOption({ icon, label, selected, onClick }) {
+  return (
+    <button type="button" onClick={onClick} style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', gap: 8,
+      padding: 16, borderRadius: 'var(--radius-md)',
+      border: `2px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
+      background: selected ? 'var(--accent-glow)' : 'var(--bg-card)',
+      color: selected ? 'var(--accent)' : 'var(--text-secondary)',
+      cursor: 'pointer', transition: 'all 0.25s',
+    }}>
+      {icon}
+      <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{label}</span>
+    </button>
+  );
+}
+
+/* ════════════════════════════════════════════
+   TELA 4 — MEUS PEDIDOS
+   ════════════════════════════════════════════ */
+
+function OrdersScreen({ orders, onChat, onFinalize }) {
+  return (
+    <div className="animate-fade-in">
+      <h1 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 20 }}>Meus Pedidos</h1>
+
       {orders.length === 0 ? (
-        <div className="text-center py-16">
-          <Clock className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4 opacity-30" />
-          <h3 className="text-lg font-medium text-[var(--text-muted)]">Nenhum pedido ativo</h3>
-          <p className="text-sm text-[#64748B] mt-2">Suas solicitações de atendimento aparecerão aqui.</p>
+        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 'var(--radius-lg)',
+            background: 'var(--bg-card)', border: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 16px',
+          }}>
+            <Clock size={28} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
+          </div>
+          <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}>Nenhum pedido ativo</h3>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+            Suas solicitações de atendimento aparecerão aqui.
+          </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {orders.map((order) => (
-            <div key={order.id} className="card p-5 border-l-4 border-l-[var(--accent)]">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <img src={order.professional.image} alt="" className="w-10 h-10 rounded-full object-cover" />
-                  <div>
-                    <h3 className="font-semibold">{order.professional.name}</h3>
-                    <p className="text-xs text-[var(--text-muted)]">{order.professional.specialty}</p>
-                  </div>
-                </div>
-                <span className={`text-xs font-bold px-2 py-1 rounded-md ${
-                  order.status === 'Confirmado' ? 'bg-[var(--accent)]/10 text-[var(--accent)]' :
-                  order.status === 'Concluído' ? 'bg-[var(--success)]/10 text-[var(--success)]' :
-                  'bg-gray-500/10 text-gray-400'
-                }`}>
-                  {order.status}
-                </span>
-              </div>
-              
-              <div className="bg-[var(--bg)] rounded-lg p-3 text-sm mb-4 border border-[var(--border)]">
-                <p><span className="text-[var(--text-muted)]">Data:</span> {order.date}</p>
-                <p><span className="text-[var(--text-muted)]">Horário:</span> {order.startTime}</p>
-                <p className="truncate"><span className="text-[var(--text-muted)]">Endereço:</span> {order.address}</p>
-              </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {orders.map((o, idx) => (
+            <div key={o.id} className={`glass-card-static animate-fade-in-up stagger-${idx + 1}`}
+              style={{ overflow: 'hidden' }}
+            >
+              {/* Accent border */}
+              <div style={{
+                height: 3,
+                background: o.status === 'Concluído'
+                  ? 'linear-gradient(90deg, #059669, #10B981)'
+                  : 'linear-gradient(90deg, #2563EB, #00D4FF)',
+              }} />
 
-              {order.status === 'Confirmado' && (
-                <div className="flex gap-3">
-                  <button onClick={() => onOpenChat(order)} className="flex-1 btn-secondary flex items-center justify-center gap-2">
-                    <MessageCircle className="w-4 h-4" /> Chat
-                  </button>
-                  <button onClick={() => onFinalize(order)} className="flex-1 btn-primary bg-gradient-to-r from-[var(--success)] to-emerald-400 hover:from-emerald-500 hover:to-emerald-400 shadow-emerald-500/20">
-                    Finalizar Serviço
-                  </button>
+              <div style={{ padding: 18 }}>
+                {/* Top */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <img src={o.professional.image} alt="" style={{
+                      width: 44, height: 44, borderRadius: 'var(--radius-md)',
+                      objectFit: 'cover', border: '2px solid var(--border)',
+                    }} />
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: '0.9375rem', margin: '0 0 2px' }}>{o.professional.name}</p>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>{o.professional.specialty}</p>
+                    </div>
+                  </div>
+                  <span className={`badge ${
+                    o.status === 'Concluído' ? 'badge-status-done' :
+                    o.status === 'Confirmado' ? 'badge-status-confirmed' :
+                    'badge-status-waiting'
+                  }`}>{o.status}</span>
                 </div>
-              )}
-              {order.status === 'Concluído' && (
-                <button className="w-full btn-secondary opacity-50 cursor-not-allowed" disabled>
-                  Serviço Finalizado
-                </button>
-              )}
+
+                {/* Details */}
+                <div style={{
+                  background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)',
+                  padding: 12, marginBottom: 14, fontSize: '0.8125rem', lineHeight: 1.7,
+                  border: '1px solid var(--border)',
+                }}>
+                  <p style={{ margin: 0 }}><span style={{ color: 'var(--text-muted)' }}>Data:</span> {o.date}</p>
+                  <p style={{ margin: 0 }}><span style={{ color: 'var(--text-muted)' }}>Horário:</span> {o.startTime}</p>
+                  <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Local:</span> {o.address}
+                  </p>
+                </div>
+
+                {/* Actions */}
+                {o.status === 'Confirmado' && (
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button onClick={() => onChat(o)} className="btn-secondary" style={{ flex: 1, padding: '10px 14px', fontSize: '0.8125rem' }}>
+                      <MessageCircle size={16} /> Chat
+                    </button>
+                    <button onClick={() => onFinalize(o)} className="btn-success" style={{ flex: 1, padding: '10px 14px', fontSize: '0.8125rem' }}>
+                      <CheckCircle2 size={16} /> Finalizar
+                    </button>
+                  </div>
+                )}
+                {o.status === 'Concluído' && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    padding: '10px', borderRadius: 'var(--radius-md)',
+                    background: 'var(--success-glow)',
+                    color: 'var(--success)',
+                    fontSize: '0.8125rem', fontWeight: 600,
+                  }}>
+                    <CheckCircle2 size={16} /> Serviço Finalizado
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -543,124 +814,221 @@ function OrdersScreen({ orders, onOpenChat, onFinalize }) {
   );
 }
 
+/* ════════════════════════════════════════════
+   TELA 4b — CHAT
+   ════════════════════════════════════════════ */
+
 function ChatScreen({ order, onBack }) {
-  const [messages, setMessages] = useState([
-    { id: 1, text: `Olá! Confirmo nosso atendimento para o dia ${order?.date} às ${order?.startTime}.`, sender: 'prof', time: '10:00' },
-    { id: 2, text: 'Muito obrigado! O endereço está correto no aplicativo?', sender: 'user', time: '10:05' },
-    { id: 3, text: 'Sim, já conferi. Chegarei com 10 minutos de antecedência.', sender: 'prof', time: '10:07' },
+  const [msgs, setMsgs] = useState([
+    { id: 1, text: `Olá! Confirmo o atendimento para ${order?.date} às ${order?.startTime}. Estarei aí com 10 minutos de antecedência.`, sender: 'pro', time: '10:00' },
+    { id: 2, text: 'Perfeito! O endereço que está no app é o correto. Obrigado!', sender: 'user', time: '10:02' },
+    { id: 3, text: 'Ótimo, já conferi. Até lá! Qualquer dúvida estou à disposição.', sender: 'pro', time: '10:04' },
   ]);
-  const [newMessage, setNewMessage] = useState('');
+  const [input, setInput] = useState('');
   const endRef = useRef(null);
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
 
-  const handleSend = (e) => {
+  const send = (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
-    setMessages([...messages, { id: Date.now(), text: newMessage, sender: 'user', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }]);
-    setNewMessage('');
-    
-    // Auto-reply mock
+    if (!input.trim()) return;
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setMsgs(m => [...m, { id: Date.now(), text: input, sender: 'user', time: now }]);
+    setInput('');
     setTimeout(() => {
-      setMessages(prev => [...prev, { id: Date.now(), text: 'Entendido. Estou à disposição.', sender: 'prof', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }]);
+      const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setMsgs(m => [...m, { id: Date.now(), text: 'Entendido! Fico à disposição 😊', sender: 'pro', time: t }]);
     }, 2000);
   };
 
   return (
-    <div className="flex flex-col h-[85vh] -mt-6">
-      <div className="bg-[var(--card)] p-4 flex items-center gap-3 border-b border-[var(--border)] sticky top-0 z-10">
-        <button onClick={onBack} className="p-2 -ml-2 text-[var(--text-muted)] hover:text-white">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <img src={order?.professional?.image} className="w-10 h-10 rounded-full object-cover" alt="" />
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)', marginTop: -20 }} className="animate-fade-in">
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '14px 0', borderBottom: '1px solid var(--border)',
+        marginBottom: 0,
+      }}>
+        <button onClick={onBack} style={{
+          background: 'none', border: 'none', color: 'var(--text-secondary)',
+          cursor: 'pointer', padding: 4,
+        }}><ChevronLeft size={20} /></button>
+        <img src={order?.professional?.image} alt="" style={{
+          width: 40, height: 40, borderRadius: 'var(--radius-md)',
+          objectFit: 'cover', border: '2px solid var(--border)',
+        }} />
         <div>
-          <h3 className="font-semibold text-sm">{order?.professional?.name}</h3>
-          <p className="text-[10px] text-[var(--success)] flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[var(--success)] block"></span> Online</p>
+          <p style={{ fontWeight: 700, fontSize: '0.875rem', margin: 0 }}>{order?.professional?.name}</p>
+          <p style={{
+            fontSize: '0.6875rem', margin: 0, color: 'var(--success)',
+            display: 'flex', alignItems: 'center', gap: 4,
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', display: 'inline-block' }} /> Online
+          </p>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
-        {messages.map(msg => (
-          <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[75%] p-3 rounded-2xl ${
-              msg.sender === 'user' 
-                ? 'bg-[var(--accent)] text-[#0B101D] rounded-tr-sm' 
-                : 'bg-[#1E293B] text-white border border-[#334155] rounded-tl-sm'
-            }`}>
-              <p className="text-sm font-medium">{msg.text}</p>
-              <p className={`text-[10px] mt-1 text-right ${msg.sender === 'user' ? 'text-black/50' : 'text-[#94A3B8]'}`}>{msg.time}</p>
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {msgs.map(m => (
+            <div key={m.id} style={{
+              display: 'flex',
+              justifyContent: m.sender === 'user' ? 'flex-end' : 'flex-start',
+            }}>
+              <div style={{
+                maxWidth: '78%', padding: '10px 14px',
+                borderRadius: m.sender === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                background: m.sender === 'user'
+                  ? 'linear-gradient(135deg, #2563EB, #0891B2)'
+                  : 'var(--bg-elevated)',
+                border: m.sender === 'user' ? 'none' : '1px solid var(--border)',
+                color: 'var(--text-primary)',
+                boxShadow: m.sender === 'user' ? '0 2px 12px rgba(0,212,255,0.15)' : 'var(--shadow-sm)',
+              }}>
+                <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.5 }}>{m.text}</p>
+                <p style={{
+                  margin: '4px 0 0', fontSize: '0.625rem', textAlign: 'right',
+                  color: m.sender === 'user' ? 'rgba(255,255,255,0.5)' : 'var(--text-muted)',
+                }}>{m.time}</p>
+              </div>
             </div>
-          </div>
-        ))}
-        <div ref={endRef} />
+          ))}
+          <div ref={endRef} />
+        </div>
       </div>
 
-      <form onSubmit={handleSend} className="p-4 bg-[var(--card)] border-t border-[var(--border)] flex gap-2">
-        <input 
-          type="text" 
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+      {/* Input */}
+      <form onSubmit={send} style={{
+        display: 'flex', gap: 10, padding: '12px 0',
+        borderTop: '1px solid var(--border)',
+      }}>
+        <input
+          type="text" value={input} onChange={e => setInput(e.target.value)}
           placeholder="Digite sua mensagem..."
-          className="input-field bg-[var(--bg)] border-none rounded-full px-5"
+          className="input-field"
+          style={{
+            flex: 1, borderRadius: 'var(--radius-full)', padding: '12px 18px',
+            background: 'var(--bg-card)',
+          }}
         />
-        <button type="submit" className="w-12 h-12 rounded-full bg-[var(--accent)] text-[#0B101D] flex items-center justify-center shrink-0 hover:bg-[#00D4FF]/80 transition-colors">
-          <Send className="w-5 h-5 ml-1" />
+        <button type="submit" style={{
+          width: 48, height: 48, borderRadius: '50%',
+          background: 'linear-gradient(135deg, #2563EB, #00D4FF)',
+          border: 'none', color: 'white', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0, transition: 'all 0.2s',
+          boxShadow: '0 2px 12px rgba(0,212,255,0.25)',
+        }}>
+          <Send size={18} style={{ marginLeft: 2 }} />
         </button>
       </form>
     </div>
   );
 }
 
-function FinalizationScreen({ order, onRatingSubmit, onBack }) {
+/* ════════════════════════════════════════════
+   TELA 5 — FINALIZAÇÃO E AVALIAÇÃO
+   ════════════════════════════════════════════ */
+
+function FinalizeScreen({ order, onBack, onSubmit }) {
   const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = () => {
+    setSubmitted(true);
+    setTimeout(onSubmit, 2000);
+  };
+
+  if (submitted) {
+    return (
+      <div className="animate-fade-in-up" style={{ textAlign: 'center', paddingTop: 80 }}>
+        <div style={{
+          width: 80, height: 80, borderRadius: '50%',
+          background: 'var(--success-glow)',
+          border: '2px solid var(--success)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 20px',
+          animation: 'pulse-glow 2s ease-in-out infinite',
+        }}>
+          <CheckCircle2 size={36} style={{ color: 'var(--success)' }} />
+        </div>
+        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 8 }}>Obrigado!</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          Sua avaliação foi enviada e o pagamento está sendo liberado.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="animate-in slide-in-from-bottom-8 duration-500">
-      <button onClick={onBack} className="flex items-center gap-2 text-[var(--text-muted)] hover:text-white mb-6 -ml-2 p-2">
-        <ChevronLeft className="w-5 h-5" /> Voltar
-      </button>
+    <div className="animate-slide-bottom">
+      <BackButton onClick={onBack} />
 
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-[var(--success)]/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-[var(--success)] text-[var(--success)]">
-          <CheckCircle2 className="w-8 h-8" />
+      {/* Success indicator */}
+      <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div style={{
+          width: 72, height: 72, borderRadius: '50%',
+          background: 'var(--success-glow)',
+          border: '2px solid var(--success)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 16px',
+        }}>
+          <CheckCircle2 size={32} style={{ color: 'var(--success)' }} />
         </div>
-        <h1 className="text-2xl font-bold">Serviço Finalizado!</h1>
-        <p className="text-[var(--text-muted)] mt-2">O valor retido agora será liberado para o profissional.</p>
+        <h1 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 6 }}>Serviço Concluído!</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+          O valor retido será liberado ao profissional após sua avaliação.
+        </p>
       </div>
-      
-      <div className="card p-6 border-t-4 border-t-[var(--accent)]">
-        <h3 className="font-semibold text-center mb-6">Avalie o atendimento de {order?.professional?.name}</h3>
-        
-        <div className="flex justify-center gap-2 mb-8">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button key={star} onClick={() => setRating(star)} className="focus:outline-none hover:scale-110 transition-transform">
-              <Star className={`w-10 h-10 ${rating >= star ? 'text-yellow-400 fill-current' : 'text-[#334155]'}`} />
+
+      {/* Rating Card */}
+      <div className="glass-card-static" style={{ padding: 24 }}>
+        <h3 style={{ textAlign: 'center', fontSize: '0.9375rem', fontWeight: 600, marginBottom: 20, color: 'var(--text-secondary)' }}>
+          Como foi o atendimento de <span style={{ color: 'var(--accent)' }}>{order?.professional?.name}</span>?
+        </h3>
+
+        {/* Stars */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
+          {[1, 2, 3, 4, 5].map(s => (
+            <button key={s}
+              onClick={() => setRating(s)}
+              onMouseEnter={() => setHoverRating(s)}
+              onMouseLeave={() => setHoverRating(0)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                transform: `scale(${(hoverRating || rating) >= s ? 1.15 : 1})`,
+                transition: 'transform 0.2s',
+              }}
+            >
+              <Star size={36}
+                fill={(hoverRating || rating) >= s ? '#FBBF24' : 'transparent'}
+                color={(hoverRating || rating) >= s ? '#FBBF24' : '#475569'}
+                strokeWidth={1.5}
+              />
             </button>
           ))}
         </div>
-        
-        <div className="mb-6">
-          <label className="text-[var(--text-muted)] text-xs font-medium uppercase tracking-wider mb-2 block text-center">
-            Deixe um elogio (Opcional)
-          </label>
+
+        {rating > 0 && (
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8125rem', marginBottom: 16 }}>
+            {rating <= 2 ? 'Que pena! Conte-nos o que aconteceu.' : rating <= 4 ? 'Bom! Obrigado pelo feedback.' : 'Excelente! Ficamos felizes! 🎉'}
+          </p>
+        )}
+
+        <div style={{ marginBottom: 20 }}>
+          <Label>Deixe um comentário (Opcional)</Label>
           <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={3}
-            placeholder="Como foi o cuidado com a sua família?"
-            className="input-field text-center resize-none bg-[#0B101D]/50"
-          ></textarea>
+            value={comment} onChange={e => setComment(e.target.value)}
+            rows={3} placeholder="Como foi o cuidado com a sua família?"
+            className="input-field" style={{ resize: 'none', lineHeight: 1.6, textAlign: 'center' }}
+          />
         </div>
-        
-        <button
-          onClick={() => onRatingSubmit(rating, comment)}
-          disabled={rating === 0}
-          className="btn-primary w-full py-3"
-        >
-          Enviar Avaliação e Concluir
+
+        <button onClick={handleSubmit} disabled={rating === 0} className="btn-primary" style={{ width: '100%', padding: '14px 20px', fontSize: '0.9375rem' }}>
+          Liberar Pagamento e Avaliar <Heart size={16} />
         </button>
       </div>
     </div>
