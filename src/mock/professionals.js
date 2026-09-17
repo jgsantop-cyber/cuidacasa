@@ -2,8 +2,8 @@ export const professionalsData = [
   {
     id: 1,
     name: "Enfª. Maria Silva",
-    avatar: "https://images.unsplash.com/photo-1594822613047-49e088d1d482?auto=format&fit=crop&q=80&w=400",
-    image: "https://images.unsplash.com/photo-1594822613047-49e088d1d482?auto=format&fit=crop&q=80&w=400",
+    avatar: "https://images.unsplash.com/photo-1623854767648-e7bb8009f0db?auto=format&fit=crop&q=80&w=400",
+    image: "https://images.unsplash.com/photo-1623854767648-e7bb8009f0db?auto=format&fit=crop&q=80&w=400",
     specialty: "Enfermeira Padrão",
     council: "COREN-SP 284.912-ENF",
     hourlyRate: 85,
@@ -91,8 +91,8 @@ export const professionalsData = [
   {
     id: 5,
     name: "Dra. Camila Nogueira",
-    avatar: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=400",
-    image: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=400",
+    avatar: "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=400",
+    image: "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=400",
     specialty: "Fisioterapeuta Geriátrica",
     council: "CREFITO-3 205.118-F",
     hourlyRate: 95,

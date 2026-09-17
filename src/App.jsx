@@ -4,7 +4,7 @@ import {
   CreditCard, QrCode, CheckCircle2, ChevronLeft, Send,
   ChevronRight, Filter, Zap, Heart, X, ArrowRight,
   PhoneCall, Award, UserCheck, HelpCircle, ChevronDown,
-  Calendar, Check, AlertCircle, Info, Sparkles, Volume2,
+  Calendar, Check, AlertCircle, Info, Volume2,
   Lock, ThumbsUp, Activity, FileText, User, Settings,
   Bell, LogOut, Plus, Edit3, Shield, HeartHandshake, Phone
 } from 'lucide-react';
@@ -233,9 +233,6 @@ export default function App() {
                   Saúde Domiciliar
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
-                Profissionais de Saúde Verificados pelo COREN & CREFITO
-              </p>
             </div>
           </div>
 
@@ -273,21 +270,6 @@ export default function App() {
 
           {/* ── BOLINHA DE PERFIL DO USUÁRIO NO TOPO (DESKTOP + MOBILE) ── */}
           <div className="flex items-center gap-3">
-            {/* Botão Plantão 24h (Desktop) */}
-            <div className="hidden lg:flex items-center gap-2 pr-3 border-r border-slate-800">
-              <a
-                href="#ajuda"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert("Central CuidaCasa 24h: Ligue 0800 882 2424 ou fale conosco pelo WhatsApp.");
-                }}
-                className="flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-cyan-400 transition-colors px-2 py-1"
-              >
-                <PhoneCall size={14} className="text-cyan-400" />
-                <span>Plantão 24h</span>
-              </a>
-            </div>
-
             {/* BOLINHA DE PERFIL / MINHA CONTA */}
             <button
               onClick={() => nav('user-profile')}
@@ -973,11 +955,6 @@ function HomeScreen({ professionals, onSelect }) {
         />
 
         <div className="relative z-10 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4 bg-cyan-950/60 border border-cyan-500/30 text-cyan-300">
-            <Sparkles size={14} className="text-cyan-400" />
-            <span>Assistência Domiciliar Segura & Humanizada</span>
-          </div>
-
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight mb-4">
             Cuidado profissional para quem você ama, no conforto do lar.
           </h1>
@@ -1029,7 +1006,8 @@ function HomeScreen({ professionals, onSelect }) {
                 placeholder="Busque por nome, especialidade ou procedimento..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="input-field pl-10"
+                className="input-field"
+                style={{ paddingLeft: '2.5rem' }}
               />
               {search && (
                 <button
