@@ -98,6 +98,7 @@ function mapOrder(row) {
     totalValue: row.total_value != null ? Number(row.total_value) : 0,
     paymentMethod: row.payment_method,
     status: row.status,
+    declineReason: row.decline_reason,
   };
 }
 
@@ -299,6 +300,77 @@ export async function updateProfessionalAvailability(id, available) {
   const { error } = await supabase
     .from('professionals')
     .update({ available })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+/* ─────────────────────────────
+   Chat (interligado solicitante ↔ profissional)
+───────────────────────────── */
+
+function mapMessage(row) {
+  return {
+    id: row.id,
+    orderId: row.order_id,
+    senderId: row.sender_id,
+    senderRole: row.sender_role,
+    content: row.content,
+    createdAt: row.created_at,
+  };
+}
+
+export async function fetchMessages(orderId) {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data || []).map(mapMessage);
+}
+
+export async function sendMessage(orderId, content, senderRole) {
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({
+      order_id: orderId,
+      sender_id: (await supabase.auth.getUser()).data.user?.id,
+      sender_role: senderRole,
+      content,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return mapMessage(data);
+}
+
+export function subscribeMessages(orderId, onInsert) {
+  return supabase
+    .channel(`messages:${orderId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `order_id=eq.${orderId}` },
+      (payload) => onInsert(mapMessage(payload.new)),
+    )
+    .subscribe();
+}
+
+/* ─────────────────────────────
+   Profissional (perfil & pedidos)
+───────────────────────────── */
+
+export async function declineOrder(id, reason) {
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'Recusado', decline_reason: reason || null })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function updateProfessional(id, fields) {
+  const { error } = await supabase
+    .from('professionals')
+    .update(fields)
     .eq('id', id);
   if (error) throw error;
 }
