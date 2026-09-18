@@ -268,8 +268,8 @@ export default function App() {
             </button>
           </nav>
 
-          {/* ── BOLINHA DE PERFIL DO USUÁRIO NO TOPO (DESKTOP + MOBILE) ── */}
-          <div className="flex items-center gap-3">
+          {/* ── BOLINHA DE PERFIL DO USUÁRIO NO TOPO (SOMENTE DESKTOP) ── */}
+          <div className="hidden md:flex items-center gap-3">
             {/* BOLINHA DE PERFIL / MINHA CONTA */}
             <button
               onClick={() => nav('user-profile')}
@@ -372,8 +372,8 @@ export default function App() {
         )}
       </main>
 
-      {/* ── RODAPÉ INSTITUCIONAL RICO (DESKTOP + MOBILE) ── */}
-      <footer className="w-full bg-slate-950/80 border-t border-slate-800/80 py-10 px-4 sm:px-6 lg:px-8 text-xs text-slate-400 mt-auto">
+      {/* ── RODAPÉ INSTITUCIONAL RICO (SOMENTE DESKTOP) ── */}
+      <footer className="hidden md:block w-full bg-slate-950/80 border-t border-slate-800/80 py-10 px-4 sm:px-6 lg:px-8 text-xs text-slate-400 mt-auto">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -1232,8 +1232,8 @@ function HomeScreen({ professionals, onSelect }) {
         )}
       </section>
 
-      {/* ── SEÇÃO INFORMATIVA 1: COMO FUNCIONA (PASSO A PASSO) ── */}
-      <section className="p-6 sm:p-10 rounded-3xl bg-slate-900/50 border border-slate-800">
+      {/* ── SEÇÃO INFORMATIVA 1: COMO FUNCIONA (PASSO A PASSO) — SOMENTE DESKTOP ── */}
+      <section className="hidden md:block p-6 sm:p-10 rounded-3xl bg-slate-900/50 border border-slate-800">
         <div className="text-center max-w-2xl mx-auto mb-8">
           <span className="text-xs font-bold uppercase tracking-widest text-cyan-400">Processo Transparente</span>
           <h2 className="text-xl sm:text-3xl font-extrabold text-white mt-1">Como funciona o CuidaCasa</h2>
@@ -1285,8 +1285,8 @@ function HomeScreen({ professionals, onSelect }) {
         </div>
       </section>
 
-      {/* ── SEÇÃO INFORMATIVA 2: PILARES DE SEGURANÇA & RIGOR ── */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* ── SEÇÃO INFORMATIVA 2: PILARES DE SEGURANÇA & RIGOR — SOMENTE DESKTOP ── */}
+      <section className="hidden md:grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
             <ShieldCheck size={24} className="text-cyan-400" />
@@ -1324,8 +1324,8 @@ function HomeScreen({ professionals, onSelect }) {
         </div>
       </section>
 
-      {/* ── SEÇÃO INFORMATIVA 3: PERGUNTAS FREQUENTES (FAQ) ── */}
-      <section className="p-6 sm:p-8 rounded-3xl bg-slate-900/40 border border-slate-800">
+      {/* ── SEÇÃO INFORMATIVA 3: PERGUNTAS FREQUENTES (FAQ) — SOMENTE DESKTOP ── */}
+      <section className="hidden md:block p-6 sm:p-8 rounded-3xl bg-slate-900/40 border border-slate-800">
         <h2 className="text-lg sm:text-2xl font-bold text-white mb-6 text-center">
           Dúvidas Frequentes das Famílias
         </h2>
