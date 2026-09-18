@@ -3,7 +3,7 @@ import {
   LogOut, Star, MapPin, Clock, Calendar, Wallet, Zap,
   CheckCircle2, ShieldCheck, Stethoscope, AlertCircle,
   PlayCircle, ChevronDown, HeartHandshake, Settings, MessageCircle,
-  UserX, Save, Check, ClipboardList,
+  UserX, Save, Check,
 } from 'lucide-react';
 import {
   fetchProfessionalById, fetchOrdersForProfessional,
@@ -36,6 +36,7 @@ export default function ProfessionalDashboard({ profile, onSignOut }) {
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState('orders');
   const [chatOrder, setChatOrder] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // settings form
   const [form, setForm] = useState({
@@ -175,20 +176,48 @@ export default function ProfessionalDashboard({ profile, onSignOut }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:block text-right">
-              <p className="text-xs font-bold text-white leading-tight">{profile?.name || 'Profissional'}</p>
-              <p className="text-[10px] text-cyan-400">Profissional de Saúde</p>
-            </div>
-            <img
-              src={profile?.avatar || ''}
-              alt=""
-              className="w-9 h-9 rounded-full object-cover border-2 border-cyan-400"
-              onError={e => { e.currentTarget.style.display = 'none'; }}
-            />
-            <button onClick={onSignOut} title="Sair" className="btn-secondary p-2 rounded-xl">
-              <LogOut size={16} />
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen(o => !o)}
+              className="flex items-center gap-2.5 p-1.5 rounded-2xl border border-transparent hover:border-slate-700 hover:bg-slate-800/60 transition-all cursor-pointer"
+              title="Perfil e Configurações"
+            >
+              <div className="hidden sm:block text-right">
+                <p className="text-xs font-bold text-white leading-tight">{profile?.name || 'Profissional'}</p>
+                <p className="text-[10px] text-cyan-400">Profissional de Saúde</p>
+              </div>
+              <img
+                src={profile?.avatar || ''}
+                alt=""
+                className="w-9 h-9 rounded-full object-cover border-2 border-cyan-400"
+                onError={e => { e.currentTarget.style.display = 'none'; }}
+              />
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
             </button>
+
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-slate-800 bg-slate-900/95 backdrop-blur-lg shadow-2xl z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-800">
+                    <p className="text-sm font-bold text-white truncate">{profile?.name}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{profile?.email || 'Profissional de Saúde'}</p>
+                  </div>
+                  <button
+                    onClick={() => { setTab('settings'); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-semibold text-slate-300 hover:bg-slate-800/60 cursor-pointer bg-transparent border-none text-left"
+                  >
+                    <Settings size={15} className="text-cyan-400" /> Configurações
+                  </button>
+                  <button
+                    onClick={onSignOut}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-semibold text-rose-400 hover:bg-slate-800/60 cursor-pointer bg-transparent border-none text-left"
+                  >
+                    <LogOut size={15} /> Sair da conta
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -209,22 +238,6 @@ export default function ProfessionalDashboard({ profile, onSignOut }) {
           </div>
         ) : (
           <>
-            {/* Abas */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 border-b border-slate-800 scrollbar-none">
-              <button onClick={() => setTab('orders')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-2 cursor-pointer transition-all ${
-                  tab === 'orders' ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md' : 'bg-slate-900/70 text-slate-400 hover:text-white border border-slate-800'
-                }`}>
-                <ClipboardList size={15} /> Atendimentos
-              </button>
-              <button onClick={() => setTab('settings')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-2 cursor-pointer transition-all ${
-                  tab === 'settings' ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md' : 'bg-slate-900/70 text-slate-400 hover:text-white border border-slate-800'
-                }`}>
-                <Settings size={15} /> Configurações
-              </button>
-            </div>
-
             {tab === 'orders' && (
               <>
                 {/* Resumo */}
@@ -393,6 +406,12 @@ export default function ProfessionalDashboard({ profile, onSignOut }) {
 
             {tab === 'settings' && (
               <div className="max-w-2xl mx-auto">
+                <button
+                  onClick={() => setTab('orders')}
+                  className="mb-4 inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer bg-transparent border-none"
+                >
+                  ← Voltar aos atendimentos
+                </button>
                 <div className="glass-card-static p-6 rounded-2xl space-y-5">
                   <h2 className="text-lg font-bold text-white flex items-center gap-2">
                     <Settings size={18} className="text-cyan-400" /> Configurações do Perfil
