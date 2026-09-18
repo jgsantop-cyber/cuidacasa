@@ -11,42 +11,13 @@ import {
   Siren, LifeBuoy, Camera, Trash2
 } from 'lucide-react';
 import {
-  fetchProfessionals, fetchUserProfile, fetchOrders,
+  fetchProfessionals, fetchOrders, fetchCurrentProfile,
   createOrder, updateOrderStatus, createReport, updateUserProfile,
-  isSupabaseConfigured,
+  isSupabaseConfigured, getSession, onAuthChange, signOut,
 } from './lib/api';
-
-/* ════════════════════════════════════════════
-   ESTRUTURA VAZIA DO PERFIL (CARREGADO DO SUPABASE)
-   ════════════════════════════════════════════ */
-
-const emptyUserData = {
-  id: null,
-  name: "",
-  email: "",
-  phone: "",
-  cpf: "",
-  avatar: "",
-  role: "",
-  patient: {
-    name: "",
-    kinship: "",
-    age: "",
-    condition: "",
-    mobility: "",
-    allergies: "",
-    healthInsurance: "",
-    emergencyContact: ""
-  },
-  address: "",
-  paymentMethod: "",
-  pixKey: "",
-  notifications: {
-    whatsappUpdates: false,
-    emailReports: false,
-    medicationAlerts: false
-  }
-};
+import AuthScreen from './screens/AuthScreen';
+import ProfessionalDashboard from './screens/ProfessionalDashboard';
+import AdminDashboard from './screens/AdminDashboard';
 
 /* ════════════════════════════════════════════
    UTILITÁRIOS & COMPONENTES COMPARTILHADOS
@@ -161,10 +132,10 @@ function SectionTitle({ children, subtitle }) {
    APLICAÇÃO PRINCIPAL (APP)
    ════════════════════════════════════════════ */
 
-export default function App() {
+function ClientApp({ userId, profile }) {
   const [screen, setScreen] = useState('home');
   const [selectedPro, setSelectedPro] = useState(null);
-  const [userProfile, setUserProfile] = useState(emptyUserData);
+  const [userProfile, setUserProfile] = useState(profile);
   const [professionals, setProfessionals] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -177,14 +148,12 @@ export default function App() {
     let active = true;
     (async () => {
       try {
-        const [pros, profile, ords] = await Promise.all([
+        const [pros, ords] = await Promise.all([
           fetchProfessionals(),
-          fetchUserProfile(),
-          fetchOrders(),
+          fetchOrders(userId),
         ]);
         if (!active) return;
         setProfessionals(pros);
-        if (profile) setUserProfile(profile);
         setOrders(ords);
       } catch (err) {
         console.error('Falha ao carregar dados do Supabase:', err);
@@ -194,7 +163,7 @@ export default function App() {
       }
     })();
     return () => { active = false; };
-  }, []);
+  }, [userId]);
 
   const nav = (s) => {
     setScreen(s);
@@ -203,7 +172,7 @@ export default function App() {
 
   const handleOrderCreated = async (order) => {
     try {
-      const created = await createOrder(order, userProfile.id);
+      const created = await createOrder(order, userId, userProfile.id);
       setOrders(prev => [created, ...prev]);
     } catch (err) {
       console.error('Falha ao criar pedido:', err);
@@ -230,7 +199,7 @@ export default function App() {
       ...payload,
       orderId: reportOrder?.id,
       professionalId: reportOrder?.professional?.id,
-    });
+    }, userId);
     return report.protocol;
   };
 
@@ -241,6 +210,10 @@ export default function App() {
     } catch (err) {
       console.error('Falha ao salvar perfil:', err);
     }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
   };
 
   if (loading) {
@@ -481,6 +454,7 @@ export default function App() {
           <UserProfileScreen
             userData={userProfile}
             onUpdate={handleProfileUpdate}
+            onLogout={handleLogout}
             onBack={() => nav('home')}
           />
         )}
@@ -644,7 +618,7 @@ function HeartPulseIcon(props) {
    TELA NOVA: PERFIL DO USUÁRIO & CONFIGURAÇÕES
    ════════════════════════════════════════════ */
 
-function UserProfileScreen({ userData, onUpdate, onBack }) {
+function UserProfileScreen({ userData, onUpdate, onBack, onLogout }) {
   const [activeTab, setActiveTab] = useState('patient');
   const [notifications, setNotifications] = useState(userData.notifications);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -1009,7 +983,7 @@ function UserProfileScreen({ userData, onUpdate, onBack }) {
             <button
               onClick={() => {
                 if (confirm("Deseja realmente sair da sua conta?")) {
-                  onBack();
+                  onLogout?.();
                 }
               }}
               className="text-xs font-semibold text-rose-400 hover:text-rose-300 flex items-center gap-1.5 cursor-pointer bg-transparent border-none"
@@ -2957,4 +2931,72 @@ function ANAScreen({ userData, orders, onNewSearch, onOrders }) {
       </p>
     </div>
   );
+}
+
+/* ════════════════════════════════════════════
+   GATE DE AUTENTICAÇÃO (POR PAPEL)
+   ════════════════════════════════════════════ */
+
+function FullLoader({ label = 'Carregando CuidaCasa...' }) {
+  return (
+    <div
+      className="min-h-screen bg-grid flex flex-col items-center justify-center gap-4"
+      style={{ background: 'var(--bg-primary)' }}
+    >
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center ana-avatar">
+        <HeartPulseIcon className="w-6 h-6 text-white" />
+      </div>
+      <span className="w-8 h-8 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" />
+      <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">{label}</p>
+    </div>
+  );
+}
+
+export default function App() {
+  const [session, setSession] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    getSession().then(({ data }) => {
+      if (mounted) {
+        setSession(data.session);
+        setAuthLoading(false);
+      }
+    });
+    const { data: sub } = onAuthChange((_event, s) => setSession(s));
+    return () => {
+      mounted = false;
+      sub?.subscription?.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!session) {
+      setProfile(null);
+      return undefined;
+    }
+    fetchCurrentProfile(session.user.id)
+      .then(p => { if (mounted) setProfile(p); })
+      .catch(err => { console.error(err); if (mounted) setProfile(null); });
+    return () => { mounted = false; };
+  }, [session]);
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  if (authLoading) return <FullLoader />;
+  if (!session) return <AuthScreen />;
+  if (!profile) return <FullLoader label="Carregando seu perfil..." />;
+
+  if (profile.accountType === 'admin') {
+    return <AdminDashboard user={session.user} profile={profile} onSignOut={handleSignOut} />;
+  }
+  if (profile.accountType === 'professional') {
+    return <ProfessionalDashboard user={session.user} profile={profile} onSignOut={handleSignOut} />;
+  }
+  return <ClientApp userId={session.user.id} profile={profile} />;
 }

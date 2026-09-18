@@ -8,5 +8,5 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 export const supabase = createClient(
   supabaseUrl || 'http://localhost:54321',
   supabaseAnonKey || 'public-anon-key',
-  { auth: { persistSession: false } }
+  { auth: { persistSession: true, autoRefreshToken: true } }
 );

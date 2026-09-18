@@ -11,6 +11,44 @@ const DEFAULT_NOTIFICATIONS = {
   medicationAlerts: false,
 };
 
+/* ─────────────────────────────
+   Auth
+───────────────────────────── */
+
+export async function signIn(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data;
+}
+
+export async function signUp({ email, password, name, accountType }) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { name, account_type: accountType },
+    },
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function signOut() {
+  await supabase.auth.signOut();
+}
+
+export async function getSession() {
+  return supabase.auth.getSession();
+}
+
+export function onAuthChange(callback) {
+  return supabase.auth.onAuthStateChange(callback);
+}
+
+/* ─────────────────────────────
+   Mapeamentos
+───────────────────────────── */
+
 function mapProfessional(row) {
   if (!row) return null;
   const reviews = (row.professional_reviews || [])
@@ -47,6 +85,9 @@ function mapProfessional(row) {
 function mapOrder(row) {
   return {
     id: row.id,
+    userId: row.user_id,
+    profileId: row.user_profile_id,
+    professionalId: row.professional_id,
     professional: mapProfessional(row.professional),
     date: row.service_date,
     startTime: (row.start_time || '').slice(0, 5),
@@ -63,6 +104,9 @@ function mapOrder(row) {
 function mapUserProfile(row) {
   return {
     id: row.id,
+    userId: row.user_id,
+    accountType: row.account_type,
+    professionalId: row.professional_id,
     name: row.name,
     email: row.email,
     phone: row.phone,
@@ -77,6 +121,10 @@ function mapUserProfile(row) {
   };
 }
 
+/* ─────────────────────────────
+   Consultas (escopo por papel via RLS)
+───────────────────────────── */
+
 export async function fetchProfessionals() {
   if (!isSupabaseConfigured) return [];
   const { data, error } = await supabase
@@ -87,33 +135,54 @@ export async function fetchProfessionals() {
   return (data || []).map(mapProfessional);
 }
 
-export async function fetchOrders() {
-  if (!isSupabaseConfigured) return [];
+export async function fetchProfessionalById(id) {
   const { data, error } = await supabase
-    .from('orders')
-    .select(ORDER_SELECT)
-    .order('created_at', { ascending: false });
+    .from('professionals')
+    .select(PROFESSIONAL_SELECT)
+    .eq('id', id)
+    .maybeSingle();
   if (error) throw error;
-  return (data || []).map(mapOrder);
+  return data ? mapProfessional(data) : null;
 }
 
-export async function fetchUserProfile() {
+export async function fetchCurrentProfile(userId) {
   if (!isSupabaseConfigured) return null;
   const { data, error } = await supabase
     .from('user_profiles')
     .select('*')
-    .order('created_at', { ascending: true })
-    .limit(1)
+    .eq('user_id', userId)
     .maybeSingle();
   if (error) throw error;
   return data ? mapUserProfile(data) : null;
 }
 
-export async function createOrder(order, userProfileId) {
+export async function fetchOrders(userId) {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapOrder);
+}
+
+export async function fetchOrdersForProfessional(professionalId) {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT)
+    .eq('professional_id', professionalId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapOrder);
+}
+
+export async function createOrder(order, userId, profileId) {
   const { data, error } = await supabase
     .from('orders')
     .insert({
-      user_profile_id: userProfileId || null,
+      user_id: userId,
+      user_profile_id: profileId,
       professional_id: order.professional.id,
       service_date: order.date,
       start_time: order.startTime,
@@ -136,11 +205,12 @@ export async function updateOrderStatus(id, status) {
   if (error) throw error;
 }
 
-export async function createReport(report) {
+export async function createReport(report, userId) {
   const protocol = `CC-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
   const { data, error } = await supabase
     .from('reports')
     .insert({
+      user_id: userId,
       order_id: report.orderId || null,
       professional_id: report.professionalId || null,
       reason: report.reason,
@@ -175,5 +245,60 @@ export async function updateUserProfile(profile) {
       updated_at: new Date().toISOString(),
     })
     .eq('id', profile.id);
+  if (error) throw error;
+}
+
+/* ─────────────────────────────
+   Admin
+───────────────────────────── */
+
+export async function fetchAllUsers() {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapUserProfile);
+}
+
+export async function fetchAllOrders() {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapOrder);
+}
+
+export async function fetchAllReports() {
+  const { data, error } = await supabase
+    .from('reports')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function updateUserAccountType(profileId, accountType) {
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ account_type: accountType })
+    .eq('id', profileId);
+  if (error) throw error;
+}
+
+export async function updateProfessionalVerified(id, isVerified) {
+  const { error } = await supabase
+    .from('professionals')
+    .update({ is_verified: isVerified })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function updateProfessionalAvailability(id, available) {
+  const { error } = await supabase
+    .from('professionals')
+    .update({ available })
+    .eq('id', id);
   if (error) throw error;
 }
