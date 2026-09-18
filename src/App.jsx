@@ -6,7 +6,9 @@ import {
   PhoneCall, Award, UserCheck, HelpCircle, ChevronDown,
   Calendar, Check, AlertCircle, Info, Volume2,
   Lock, ThumbsUp, Activity, FileText, User, Settings,
-  Bell, LogOut, Plus, Edit3, Shield, HeartHandshake, Phone
+  Bell, LogOut, Plus, Edit3, Shield, HeartHandshake, Phone,
+  Bot, Sparkles, Flag, Paperclip, ShieldAlert,
+  Siren, LifeBuoy, Camera, Trash2
 } from 'lucide-react';
 import { professionalsData } from './mock/professionals';
 
@@ -175,6 +177,7 @@ export default function App() {
   ]);
   const [chatOrder, setChatOrder] = useState(null);
   const [finalizeOrder, setFinalizeOrder] = useState(null);
+  const [reportOrder, setReportOrder] = useState(null);
 
   const nav = (s) => {
     setScreen(s);
@@ -266,6 +269,18 @@ export default function App() {
                 </span>
               )}
             </button>
+
+            <button
+              onClick={() => nav('ana')}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+                screen === 'ana'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <Sparkles size={15} />
+              IA ANA
+            </button>
           </nav>
 
           {/* ── BOLINHA DE PERFIL DO USUÁRIO NO TOPO (SOMENTE DESKTOP) ── */}
@@ -347,7 +362,23 @@ export default function App() {
             orders={orders}
             onChat={(o) => { setChatOrder(o); nav('chat'); }}
             onFinalize={(o) => { setFinalizeOrder(o); nav('finalize'); }}
+            onReport={(o) => { setReportOrder(o); nav('report'); }}
             onNewSearch={() => nav('home')}
+          />
+        )}
+        {screen === 'report' && (
+          <ReportScreen
+            order={reportOrder}
+            onBack={() => nav('orders')}
+            onSubmitted={() => nav('orders')}
+          />
+        )}
+        {screen === 'ana' && (
+          <ANAScreen
+            userData={userProfile}
+            orders={orders}
+            onNewSearch={() => nav('home')}
+            onOrders={() => nav('orders')}
           />
         )}
         {screen === 'chat' && (
@@ -465,6 +496,13 @@ export default function App() {
             badge={orders.filter(o => o.status === 'Confirmado').length || null}
           />
           <NavBtn
+            icon={<Sparkles size={22} />}
+            label="IA ANA"
+            active={screen === 'ana'}
+            onClick={() => nav('ana')}
+            highlight
+          />
+          <NavBtn
             icon={<User size={22} />}
             label="Minha Conta"
             active={screen === 'user-profile'}
@@ -477,13 +515,17 @@ export default function App() {
   );
 }
 
-function NavBtn({ icon, label, active, onClick, badge }) {
+function NavBtn({ icon, label, active, onClick, badge, highlight }) {
   return (
     <button
       onClick={onClick}
       className="flex flex-col items-center justify-center relative py-1 px-4 transition-colors cursor-pointer border-none bg-transparent"
       style={{
-        color: active ? 'var(--accent)' : 'var(--text-muted)',
+        color: active
+          ? 'var(--accent)'
+          : highlight
+            ? '#7DD3FC'
+            : 'var(--text-muted)',
       }}
     >
       {badge && (
@@ -1970,7 +2012,7 @@ function PaymentOption({ icon, label, selected, onClick }) {
    TELA 4 — MEUS PEDIDOS (DESKTOP + MOBILE)
    ════════════════════════════════════════════ */
 
-function OrdersScreen({ orders, onChat, onFinalize, onNewSearch }) {
+function OrdersScreen({ orders, onChat, onFinalize, onReport, onNewSearch }) {
   return (
     <div className="animate-fade-in max-w-5xl mx-auto pb-16">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -2073,18 +2115,28 @@ function OrdersScreen({ orders, onChat, onFinalize, onNewSearch }) {
                 {/* Ações */}
                 <div className="pt-2">
                   {o.status === 'Confirmado' ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => onChat(o)}
-                        className="btn-secondary text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2"
-                      >
-                        <MessageCircle size={15} />
-                        <span>Chat Direto</span>
-                      </button>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => onChat(o)}
+                          className="btn-secondary text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2"
+                        >
+                          <MessageCircle size={15} />
+                          <span>Chat Direto</span>
+                        </button>
+
+                        <button
+                          onClick={() => onReport(o)}
+                          className="btn-danger text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2"
+                        >
+                          <Flag size={15} />
+                          <span>Denunciar</span>
+                        </button>
+                      </div>
 
                       <button
                         onClick={() => onFinalize(o)}
-                        className="btn-success text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2"
+                        className="btn-success w-full text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2"
                       >
                         <CheckCircle2 size={15} />
                         <span>Concluir Serviço</span>
@@ -2341,6 +2393,475 @@ function FinalizeScreen({ order, onBack, onSubmit }) {
           <Heart size={16} />
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════
+   TELA 6 — DENÚNCIA / REPORTAR PROFISSIONAL
+   ════════════════════════════════════════════ */
+
+const REPORT_REASONS = [
+  { id: 'conduct', label: 'Conduta inadequada ou desrespeitosa', desc: 'Assédio, linguagem ofensiva ou desrespeito ao paciente.' },
+  { id: 'negligence', label: 'Negligência ou imperícia no cuidado', desc: 'Abandono do paciente, erro de medicação ou risco à saúde.' },
+  { id: 'absence', label: 'Atraso, falta ou abandono do plantão', desc: 'Não compareceu, chegou muito atrasado ou saiu antes do combinado.' },
+  { id: 'billing', label: 'Cobrança indevida ou tentativa de fraude', desc: 'Pedido de pagamento por fora da plataforma ou valores abusivos.' },
+  { id: 'hygiene', label: 'Falta de higiene ou equipamentos irregulares', desc: 'Material não esterilizado ou condições inadequadas.' },
+  { id: 'other', label: 'Outro motivo', desc: 'Relate qualquer outra situação que precise de apuração.' },
+];
+
+function ReportScreen({ order, onBack, onSubmitted }) {
+  const [reason, setReason] = useState('');
+  const [details, setDetails] = useState('');
+  const [anonymous, setAnonymous] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [protocol, setProtocol] = useState('');
+
+  const addAttachment = (type) => {
+    const labels = {
+      photo: `foto_plantao_${attachments.length + 1}.jpg`,
+      video: `gravacao_${attachments.length + 1}.mp4`,
+      document: `documento_${attachments.length + 1}.pdf`,
+    };
+    setAttachments(a => [...a, { id: Date.now(), type, name: labels[type] }]);
+  };
+
+  const removeAttachment = (id) => setAttachments(a => a.filter(x => x.id !== id));
+
+  const submit = () => {
+    if (!reason) {
+      alert('Selecione o motivo principal da denúncia.');
+      return;
+    }
+    if (details.trim().length < 20) {
+      alert('Descreva a situação com pelo menos 20 caracteres para que possamos apurar corretamente.');
+      return;
+    }
+    setLoading(true);
+    setTimeout(() => {
+      setProtocol(`CC-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 899999)}`);
+      setLoading(false);
+    }, 1400);
+  };
+
+  if (protocol) {
+    return (
+      <div className="animate-fade-in max-w-xl mx-auto pb-16">
+        <div className="glass-card-static p-8 rounded-3xl text-center border border-rose-500/30">
+          <div className="w-20 h-20 rounded-full bg-rose-500/15 border-2 border-rose-500/50 flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert size={36} className="text-rose-400" />
+          </div>
+          <h2 className="text-2xl font-extrabold text-white mb-2">Denúncia Registrada</h2>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-5">
+            Sua denúncia foi recebida com sigilo. Nossa equipe de compliance irá apurar o caso em até <strong className="text-white">24 horas</strong> e entrará em contato.
+          </p>
+
+          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 mb-5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1">Número do Protocolo</span>
+            <span className="text-lg font-black text-rose-300 tracking-wide">{protocol}</span>
+          </div>
+
+          <div className="space-y-2 text-left mb-6">
+            {[
+              { label: 'Denúncia recebida', done: true },
+              { label: 'Em análise pelo time de compliance', done: true },
+              { label: 'Retorno por telefone/e-mail', done: false },
+            ].map((step, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+                {step.done
+                  ? <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+                  : <Clock size={16} className="text-amber-400 shrink-0" />}
+                <span className={`text-xs ${step.done ? 'text-slate-200' : 'text-slate-400'}`}>{step.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <button onClick={onSubmitted} className="btn-primary w-full py-3.5 text-sm font-bold rounded-xl">
+            <span>Voltar aos Meus Pedidos</span>
+            <ArrowRight size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="animate-slide-right max-w-3xl mx-auto pb-16">
+      <BackButton onClick={onBack} label="Voltar aos pedidos" />
+
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-11 h-11 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center">
+            <Flag size={22} className="text-rose-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Denunciar / Reportar</h1>
+            <p className="text-xs sm:text-sm text-slate-400">Seu relato é 100% sigiloso e tratado pelo time de compliance.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Aviso de emergência */}
+      <div className="mb-5 p-4 rounded-2xl bg-rose-950/40 border border-rose-500/40 flex items-start gap-3">
+        <Siren size={20} className="text-rose-400 shrink-0 mt-0.5" />
+        <p className="text-xs text-rose-100 leading-relaxed">
+          <strong>Em caso de risco imediato à vida</strong>, ligue primeiro para o <strong>SAMU 192</strong> ou <strong>Polícia 190</strong>.
+          Use esta tela para registrar a ocorrência e acionar o suporte CuidaCasa.
+        </p>
+      </div>
+
+      <div className="space-y-6">
+        {/* Profissional / Pedido */}
+        {order && (
+          <div className="glass-card-static p-4 rounded-2xl flex items-center gap-4 border-l-4 border-l-rose-500">
+            <ProfessionalAvatar
+              src={order.professional?.avatar || order.professional?.image}
+              name={order.professional?.name}
+              size={52}
+              rounded="rounded-xl"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-white truncate">{order.professional?.name}</p>
+              <p className="text-xs text-rose-300 truncate">{order.professional?.specialty}</p>
+              <p className="text-[11px] text-slate-400">
+                Plantão de {order.date} · {order.startTime} às {order.endTime}
+              </p>
+            </div>
+            <span className="badge badge-danger">Reportando</span>
+          </div>
+        )}
+
+        {/* Motivo */}
+        <div className="glass-card-static p-6 rounded-2xl">
+          <SectionTitle subtitle="Escolha a opção que melhor descreve o problema">
+            Motivo Principal da Denúncia
+          </SectionTitle>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            {REPORT_REASONS.map(r => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setReason(r.id)}
+                className={`text-left p-3.5 rounded-xl border transition-all cursor-pointer ${
+                  reason === r.id
+                    ? 'bg-rose-950/40 border-rose-500/60 shadow-sm'
+                    : 'bg-slate-900/70 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className={`text-xs font-bold ${reason === r.id ? 'text-rose-300' : 'text-white'}`}>{r.label}</span>
+                  {reason === r.id && <Check size={14} className="text-rose-400 shrink-0" />}
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">{r.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Descrição */}
+        <div className="glass-card-static p-6 rounded-2xl space-y-4">
+          <SectionTitle subtitle="Quanto mais detalhes, mais rápida e precisa será a apuração">
+            Descrição Detalhada
+          </SectionTitle>
+
+          <div>
+            <Label required>O que aconteceu?</Label>
+            <textarea
+              required
+              rows={5}
+              value={details}
+              onChange={e => setDetails(e.target.value)}
+              placeholder="Descreva data, horário, nomes envolvidos e o que ocorreu durante o atendimento..."
+              className="input-field resize-none leading-relaxed"
+            />
+            <p className="text-[11px] text-slate-500 mt-1">{details.trim().length} / mínimo 20 caracteres</p>
+          </div>
+
+          {/* Anexos simulados */}
+          <div>
+            <Label>Evidências (Fotos, Vídeos ou Documentos) — Opcional</Label>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => addAttachment('photo')} className="btn-secondary text-xs py-2 px-3 rounded-xl">
+                <Camera size={14} /> Foto
+              </button>
+              <button type="button" onClick={() => addAttachment('video')} className="btn-secondary text-xs py-2 px-3 rounded-xl">
+                <Paperclip size={14} /> Vídeo
+              </button>
+              <button type="button" onClick={() => addAttachment('document')} className="btn-secondary text-xs py-2 px-3 rounded-xl">
+                <FileText size={14} /> Documento
+              </button>
+            </div>
+
+            {attachments.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {attachments.map(a => (
+                  <div key={a.id} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                    <span className="text-xs text-slate-300 truncate flex items-center gap-2">
+                      <Paperclip size={13} className="text-cyan-400 shrink-0" /> {a.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(a.id)}
+                      className="text-slate-500 hover:text-rose-400 transition-colors bg-transparent border-none cursor-pointer"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sigilo e confirmação */}
+        <div className="glass-card-static p-6 rounded-2xl space-y-4">
+          <SectionTitle subtitle="Você controla como quer ser identificado">
+            Privacidade & Envio
+          </SectionTitle>
+
+          <button
+            type="button"
+            onClick={() => setAnonymous(!anonymous)}
+            className="w-full flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/80 border border-slate-800 cursor-pointer text-left"
+          >
+            <div>
+              <p className="text-xs font-bold text-white">Enviar denúncia de forma anônima</p>
+              <p className="text-[11px] text-slate-400">Se ativado, seu nome não será informado ao profissional.</p>
+            </div>
+            <span className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${anonymous ? 'bg-rose-500' : 'bg-slate-700'}`}>
+              <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${anonymous ? 'right-1' : 'left-1'}`} />
+            </span>
+          </button>
+
+          <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-3">
+            <Lock size={16} className="text-cyan-400 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Todas as denúncias são criptografadas e registradas sob a LGPD. Denúncias comprovadamente falsas podem gerar sanções.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={submit}
+            disabled={loading}
+            className="btn-danger w-full py-4 text-sm font-bold rounded-xl"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Enviando denúncia segura...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                Registrar Denúncia <Flag size={16} />
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════
+   TELA 7 — IA ANA · ASSISTENTE INTELIGENTE
+   ════════════════════════════════════════════ */
+
+const ANA_SUGGESTIONS = [
+  'Como agendar um enfermeiro?',
+  'Quanto custa um plantão de 12h?',
+  'Como funciona o reembolso do convênio?',
+  'Preciso fazer uma denúncia',
+  'Quais cuidados para pós-operatório?',
+  'Como cancelar um atendimento?',
+];
+
+function getAnaReply(text, userData, orders) {
+  const q = text.toLowerCase();
+  const firstName = userData?.name?.split(' ')[0] || 'você';
+  const confirmed = orders?.filter(o => o.status === 'Confirmado').length || 0;
+
+  if (/^(oi|olá|ola|bom dia|boa tarde|boa noite|hey|ei)\b/.test(q)) {
+    return `Olá, ${firstName}! Sou a ANA, sua assistente inteligente do CuidaCasa. Posso ajudar com agendamentos, valores, reembolso, cuidados clínicos, denúncias e muito mais. Como posso te ajudar agora?`;
+  }
+  if (q.includes('agendar') || q.includes('agendamento') || q.includes('contratar') || q.includes('marcar')) {
+    return 'Para agendar é simples: na aba "Buscar", escolha o profissional verificado, clique em "Solicitar Atendimento", defina data, horário de início e término (o valor é calculado automaticamente) e confirme o pagamento protegido. Quer que eu te leve até a busca?';
+  }
+  if (q.includes('preço') || q.includes('preco') || q.includes('valor') || q.includes('custa') || q.includes('quanto')) {
+    return 'Os valores variam por especialidade e duração, sempre exibidos por hora antes da contratação. O pagamento fica retido em custódia e só é liberado ao profissional após você concluir o atendimento. Não cobramos taxa de intermediação nesta promoção.';
+  }
+  if (q.includes('reembolso') || q.includes('convênio') || q.includes('convenio') || q.includes('plano')) {
+    return 'Emitimos relatórios e notas fiscais com CRM/COREN dos profissionais para você solicitar reembolso ao seu convênio. Acesse "Minha Conta → Pagamentos & Reembolso → Visualizar Recibos" para baixar os comprovantes.';
+  }
+  if (q.includes('denúncia') || q.includes('denuncia') || q.includes('denunciar') || q.includes('reportar') || q.includes('problema')) {
+    return 'Sinto muito que algo tenha ocorrido. Você pode registrar uma denúncia sigilosa diretamente no seu pedido, no botão vermelho "Denunciar". Em caso de risco imediato, ligue 192 (SAMU) ou 190 (Polícia) primeiro. Nosso compliance responde em até 24h.';
+  }
+  if (q.includes('emergência') || q.includes('emergencia') || q.includes('urgente') || q.includes('socorro')) {
+    return 'Se houver risco à vida, ligue imediatamente para o SAMU (192) ou Bombeiros (193). Depois me avise para acionarmos o suporte CuidaCasa 24h e registrarmos a ocorrência no seu pedido.';
+  }
+  if (q.includes('cancelar') || q.includes('cancelamento')) {
+    return 'Cancelamentos são gratuitos com até 2 horas de antecedência do plantão. Após esse prazo, pode haver retenção parcial. Quer que eu abra seus pedidos para você cancelar?';
+  }
+  if (q.includes('pós-operatório') || q.includes('pos-operatorio') || q.includes('curativo') || q.includes('pós operatorio')) {
+    return 'Para pós-operatório recomendamos enfermeiros ou técnicos de enfermagem, com foco em curativos, administração de medicação e sinais vitais. Aumente a segurança marcando plantões de 6h a 12h nos primeiros dias. Posso sugerir profissionais disponíveis na busca.';
+  }
+  if (q.includes('pedido') || q.includes('meu atendimento') || q.includes('meus pedidos') || q.includes('plantão')) {
+    return `Você tem ${confirmed} ${confirmed === 1 ? 'atendimento confirmado' : 'atendimentos confirmados'} no momento. Na aba "Pedidos" você acompanha status, conversa no chat e finaliza o serviço liberando o pagamento com segurança.`;
+  }
+  if (q.includes('profissional') || q.includes('enfermeir') || q.includes('cuidador') || q.includes('fisioterap') || q.includes('técnico')) {
+    return 'Todos os profissionais passam por validação de registro no COREN/CREFITO, checagem de antecedentes criminais e entrevista técnica. Você pode filtrar por especialidade, distância e disponibilidade imediata na aba "Buscar".';
+  }
+  if (q.includes('seguro') || q.includes('segurança') || q.includes('golpe') || q.includes('fraude')) {
+    return 'Sua segurança é prioridade: pagamentos só pela plataforma, valor retido em custódia, profissionais verificados e suporte 24h. Nunca faça pagamentos por fora do CuidaCasa. Suspeitou de fraude? Use o botão "Denunciar".';
+  }
+  return 'Entendi, ' + firstName + '. Posso te ajudar com: agendamento, valores, reembolso por convênio, cuidados clínicos, cancelamento, segurança e denúncias. Pode me contar um pouco mais do que você precisa?';
+}
+
+function ANAScreen({ userData, orders, onNewSearch, onOrders }) {
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      sender: 'ana',
+      text: `Olá, ${userData?.name?.split(' ')[0] || 'seja bem-vindo(a)'}! Eu sou a ANA, sua assistente inteligente do CuidaCasa. Estou aqui para tirar dúvidas, orientar sobre cuidados e te ajudar em cada etapa do atendimento. Como posso te ajudar hoje?`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    },
+  ]);
+  const [input, setInput] = useState('');
+  const [typing, setTyping] = useState(false);
+  const endRef = useRef(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, typing]);
+
+  const sendMessage = (text) => {
+    const value = (text ?? input).trim();
+    if (!value) return;
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setMessages(m => [...m, { id: Date.now(), sender: 'user', text: value, time: now }]);
+    setInput('');
+    setTyping(true);
+
+    setTimeout(() => {
+      setTyping(false);
+      setMessages(m => [...m, {
+        id: Date.now() + 1,
+        sender: 'ana',
+        text: getAnaReply(value, userData, orders),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }]);
+    }, 1200);
+  };
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    sendMessage();
+  };
+
+  return (
+    <div className="animate-fade-in max-w-3xl mx-auto flex flex-col">
+      {/* Cabeçalho da ANA */}
+      <div className="glass-card-static p-4 sm:p-5 rounded-2xl border border-cyan-500/25 mb-4 relative overflow-hidden">
+        <div
+          className="absolute -top-16 -right-16 w-48 h-48 rounded-full blur-3xl pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(0, 212, 255, 0.18) 0%, transparent 70%)' }}
+        />
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="ana-avatar w-12 h-12 rounded-2xl flex items-center justify-center shrink-0">
+            <Bot size={24} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-extrabold ana-gradient-text">ANA</h1>
+              <span className="badge badge-verified"><Sparkles size={10} /> Assistente IA</span>
+            </div>
+            <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              Online · suporte inteligente 24 horas
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Área de conversa */}
+      <div className="flex-1 overflow-y-auto p-4 rounded-2xl bg-slate-950/60 border border-slate-900 space-y-3 h-[calc(100dvh-360px)] min-h-[280px] md:h-[calc(100dvh-300px)]">
+        {messages.map(m => (
+          <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {m.sender === 'ana' && (
+              <div className="ana-avatar w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mr-2 self-end">
+                <Bot size={16} className="text-white" />
+              </div>
+            )}
+            <div
+              className={`max-w-[82%] sm:max-w-[72%] p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                m.sender === 'user'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-tr-none shadow-md'
+                  : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'
+              }`}
+            >
+              <p>{m.text}</p>
+              <span className={`block text-[10px] text-right mt-1.5 ${m.sender === 'user' ? 'text-cyan-100/70' : 'text-slate-400'}`}>
+                {m.time}
+              </span>
+            </div>
+          </div>
+        ))}
+
+        {typing && (
+          <div className="flex justify-start">
+            <div className="ana-avatar w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mr-2 self-end">
+              <Bot size={16} className="text-white" />
+            </div>
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-none px-4 py-3 ana-typing">
+              <span /><span /><span />
+            </div>
+          </div>
+        )}
+        <div ref={endRef} />
+      </div>
+
+      {/* Sugestões rápidas */}
+      <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-none">
+        {ANA_SUGGESTIONS.map(s => (
+          <button
+            key={s}
+            onClick={() => sendMessage(s)}
+            className="shrink-0 text-[11px] px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40 transition-all cursor-pointer"
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {/* Atalhos e input */}
+      <div className="flex gap-2 mt-3">
+        <button onClick={onNewSearch} className="btn-secondary text-xs py-3 px-3 rounded-2xl shrink-0" title="Buscar profissionais">
+          <Search size={16} />
+        </button>
+        <button onClick={onOrders} className="btn-secondary text-xs py-3 px-3 rounded-2xl shrink-0" title="Meus pedidos">
+          <Clock size={16} />
+        </button>
+
+        <form onSubmit={onSubmit} className="flex gap-2 flex-1">
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="Pergunte algo para a ANA..."
+            className="input-field rounded-2xl"
+          />
+          <button type="submit" className="btn-primary rounded-2xl px-5 shrink-0">
+            <Send size={16} />
+          </button>
+        </form>
+      </div>
+
+      <p className="text-[10px] text-slate-500 text-center mt-2 flex items-center justify-center gap-1.5">
+        <LifeBuoy size={11} className="text-cyan-400" />
+        ANA orienta, mas não substitui avaliação médica. Em emergências, ligue 192.
+      </p>
     </div>
   );
 }
