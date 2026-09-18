@@ -10,36 +10,41 @@ import {
   Bot, Sparkles, Flag, Paperclip, ShieldAlert,
   Siren, LifeBuoy, Camera, Trash2
 } from 'lucide-react';
-import { professionalsData } from './mock/professionals';
+import {
+  fetchProfessionals, fetchUserProfile, fetchOrders,
+  createOrder, updateOrderStatus, createReport, updateUserProfile,
+  isSupabaseConfigured,
+} from './lib/api';
 
 /* ════════════════════════════════════════════
-   DADOS MOCK DO USUÁRIO LOGADO
+   ESTRUTURA VAZIA DO PERFIL (CARREGADO DO SUPABASE)
    ════════════════════════════════════════════ */
 
-const initialUserData = {
-  name: "João Guilherme Santos",
-  email: "joao.santos@email.com",
-  phone: "(11) 98765-4321",
-  cpf: "342.***.***-80",
-  avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200",
-  role: "Familiar Responsável (Titular)",
+const emptyUserData = {
+  id: null,
+  name: "",
+  email: "",
+  phone: "",
+  cpf: "",
+  avatar: "",
+  role: "",
   patient: {
-    name: "Sr. Antônio Santos",
-    kinship: "Pai",
-    age: 78,
-    condition: "Pós-operatório de fratura de fêmur e hipertensão arterial controlada.",
-    mobility: "Mobilidade reduzida com andador de 4 rodas.",
-    allergies: "Alérgico a Dipirona e Iodo.",
-    healthInsurance: "Bradesco Saúde Top Nacional",
-    emergencyContact: "(11) 99123-0000 (Irmã - Mariana Santos)"
+    name: "",
+    kinship: "",
+    age: "",
+    condition: "",
+    mobility: "",
+    allergies: "",
+    healthInsurance: "",
+    emergencyContact: ""
   },
-  address: "Rua Bela Cintra, 1420, Apto 82 - Jardins, São Paulo - SP",
-  paymentMethod: "Mastercard final 4092 (Crédito)",
-  pixKey: "joao.santos@email.com",
+  address: "",
+  paymentMethod: "",
+  pixKey: "",
   notifications: {
-    whatsappUpdates: true,
-    emailReports: true,
-    medicationAlerts: true
+    whatsappUpdates: false,
+    emailReports: false,
+    medicationAlerts: false
   }
 };
 
@@ -159,30 +164,101 @@ function SectionTitle({ children, subtitle }) {
 export default function App() {
   const [screen, setScreen] = useState('home');
   const [selectedPro, setSelectedPro] = useState(null);
-  const [userProfile, setUserProfile] = useState(initialUserData);
-  const [orders, setOrders] = useState([
-    {
-      id: 101,
-      professional: professionalsData[0],
-      date: '2026-09-17',
-      startTime: '08:00',
-      endTime: '14:00',
-      durationHours: 6,
-      address: initialUserData.address,
-      need: 'Acompanhamento pós-cirúrgico de quadril e medicação endovenosa.',
-      totalValue: 510,
-      paymentMethod: 'pix',
-      status: 'Confirmado'
-    }
-  ]);
+  const [userProfile, setUserProfile] = useState(emptyUserData);
+  const [professionals, setProfessionals] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dataError, setDataError] = useState('');
   const [chatOrder, setChatOrder] = useState(null);
   const [finalizeOrder, setFinalizeOrder] = useState(null);
   const [reportOrder, setReportOrder] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [pros, profile, ords] = await Promise.all([
+          fetchProfessionals(),
+          fetchUserProfile(),
+          fetchOrders(),
+        ]);
+        if (!active) return;
+        setProfessionals(pros);
+        if (profile) setUserProfile(profile);
+        setOrders(ords);
+      } catch (err) {
+        console.error('Falha ao carregar dados do Supabase:', err);
+        if (active) setDataError('Não foi possível carregar os dados do servidor.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   const nav = (s) => {
     setScreen(s);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const handleOrderCreated = async (order) => {
+    try {
+      const created = await createOrder(order, userProfile.id);
+      setOrders(prev => [created, ...prev]);
+    } catch (err) {
+      console.error('Falha ao criar pedido:', err);
+      alert('Não foi possível registrar o pedido no servidor. Tente novamente.');
+    }
+    nav('orders');
+  };
+
+  const handleFinalize = async () => {
+    try {
+      await updateOrderStatus(finalizeOrder.id, 'Concluído');
+      setOrders(prev => prev.map(o => (
+        o.id === finalizeOrder.id ? { ...o, status: 'Concluído' } : o
+      )));
+    } catch (err) {
+      console.error('Falha ao concluir pedido:', err);
+      alert('Não foi possível concluir o pedido no servidor. Tente novamente.');
+    }
+    nav('orders');
+  };
+
+  const handleReport = async (payload) => {
+    const report = await createReport({
+      ...payload,
+      orderId: reportOrder?.id,
+      professionalId: reportOrder?.professional?.id,
+    });
+    return report.protocol;
+  };
+
+  const handleProfileUpdate = async (data) => {
+    setUserProfile(data);
+    try {
+      await updateUserProfile(data);
+    } catch (err) {
+      console.error('Falha ao salvar perfil:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div
+        className="min-h-screen bg-grid flex flex-col items-center justify-center gap-4"
+        style={{ background: 'var(--bg-primary)' }}
+      >
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center ana-avatar">
+          <HeartPulseIcon className="w-6 h-6 text-white" />
+        </div>
+        <span className="w-8 h-8 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" />
+        <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+          Carregando CuidaCasa...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-grid flex flex-col" style={{ background: 'var(--bg-primary)' }}>
@@ -334,9 +410,20 @@ export default function App() {
 
       {/* ── CONTEÚDO PRINCIPAL COM CONTAINER RESPONSIVO ── */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-12">
+        {!isSupabaseConfigured && (
+          <div className="mb-5 p-3 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs font-semibold flex items-center gap-2">
+            <AlertCircle size={15} /> Supabase não configurado: defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no .env.
+          </div>
+        )}
+        {dataError && (
+          <div className="mb-5 p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs font-semibold flex items-center gap-2">
+            <AlertCircle size={15} /> {dataError}
+          </div>
+        )}
+
         {screen === 'home' && (
           <HomeScreen
-            professionals={professionalsData}
+            professionals={professionals}
             onSelect={(p) => { setSelectedPro(p); nav('profile'); }}
           />
         )}
@@ -350,11 +437,9 @@ export default function App() {
         {screen === 'request' && (
           <RequestScreen
             professional={selectedPro}
+            defaultAddress={userProfile.address}
             onBack={() => nav('profile')}
-            onCreated={(order) => {
-              setOrders([{ ...order, id: Date.now(), status: 'Confirmado' }, ...orders]);
-              nav('orders');
-            }}
+            onCreated={handleOrderCreated}
           />
         )}
         {screen === 'orders' && (
@@ -370,6 +455,7 @@ export default function App() {
           <ReportScreen
             order={reportOrder}
             onBack={() => nav('orders')}
+            onSubmit={handleReport}
             onSubmitted={() => nav('orders')}
           />
         )}
@@ -388,16 +474,13 @@ export default function App() {
           <FinalizeScreen
             order={finalizeOrder}
             onBack={() => nav('orders')}
-            onSubmit={() => {
-              setOrders(orders.map(o => o.id === finalizeOrder.id ? { ...o, status: 'Concluído' } : o));
-              nav('orders');
-            }}
+            onSubmit={handleFinalize}
           />
         )}
         {screen === 'user-profile' && (
           <UserProfileScreen
             userData={userProfile}
-            onUpdate={setUserProfile}
+            onUpdate={handleProfileUpdate}
             onBack={() => nav('home')}
           />
         )}
@@ -1667,13 +1750,13 @@ function ProfileScreen({ professional: p, onBack, onRequest }) {
    TELA 3 — SOLICITAÇÃO DE ATENDIMENTO
    ════════════════════════════════════════════ */
 
-function RequestScreen({ professional: p, onBack, onCreated }) {
+function RequestScreen({ professional: p, onBack, onCreated, defaultAddress }) {
   const todayStr = new Date().toISOString().split('T')[0];
 
   const [date, setDate] = useState(todayStr);
   const [start, setStart] = useState('08:00');
   const [end, setEnd] = useState('14:00');
-  const [address, setAddress] = useState('Rua Bela Cintra, 1420, Apto 82 - Jardins, São Paulo');
+  const [address, setAddress] = useState(defaultAddress || '');
   const [need, setNeed] = useState('');
   const [payment, setPayment] = useState('pix');
   const [loading, setLoading] = useState(false);
@@ -2410,7 +2493,7 @@ const REPORT_REASONS = [
   { id: 'other', label: 'Outro motivo', desc: 'Relate qualquer outra situação que precise de apuração.' },
 ];
 
-function ReportScreen({ order, onBack, onSubmitted }) {
+function ReportScreen({ order, onBack, onSubmit, onSubmitted }) {
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
   const [anonymous, setAnonymous] = useState(false);
@@ -2429,7 +2512,7 @@ function ReportScreen({ order, onBack, onSubmitted }) {
 
   const removeAttachment = (id) => setAttachments(a => a.filter(x => x.id !== id));
 
-  const submit = () => {
+  const submit = async () => {
     if (!reason) {
       alert('Selecione o motivo principal da denúncia.');
       return;
@@ -2439,10 +2522,20 @@ function ReportScreen({ order, onBack, onSubmitted }) {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      setProtocol(`CC-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 899999)}`);
+    try {
+      const proto = await onSubmit({
+        reason,
+        details: details.trim(),
+        anonymous,
+        attachments: attachments.map(a => ({ type: a.type, name: a.name })),
+      });
+      setProtocol(proto || `CC-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`);
+    } catch (err) {
+      console.error('Falha ao registrar denúncia:', err);
+      alert('Não foi possível registrar a denúncia no servidor. Tente novamente.');
+    } finally {
       setLoading(false);
-    }, 1400);
+    }
   };
 
   if (protocol) {
