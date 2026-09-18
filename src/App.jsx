@@ -2934,6 +2934,139 @@ function ANAScreen({ userData, orders, onNewSearch, onOrders }) {
 }
 
 /* ════════════════════════════════════════════
+   MODO VISITANTE (CATÁLOGO SEM LOGIN)
+   ════════════════════════════════════════════ */
+
+function GuestApp() {
+  const [view, setView] = useState('catalog'); // 'catalog' | 'auth'
+  const [authView, setAuthView] = useState('login');
+  const [screen, setScreen] = useState('home');
+  const [selectedPro, setSelectedPro] = useState(null);
+  const [professionals, setProfessionals] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    fetchProfessionals()
+      .then(p => { if (active) setProfessionals(p); })
+      .catch(err => console.error('Falha ao carregar catálogo:', err))
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  if (view === 'auth') {
+    return <AuthScreen initialMode={authView} onBack={() => setView('catalog')} />;
+  }
+
+  const openAuth = (mode = 'login') => {
+    setAuthView(mode);
+    setView('auth');
+  };
+
+  const nav = (s) => {
+    setScreen(s);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="min-h-screen bg-grid flex flex-col" style={{ background: 'var(--bg-primary)' }}>
+      <header
+        className="sticky top-0 z-50 w-full border-b"
+        style={{
+          background: 'rgba(6, 10, 19, 0.94)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderColor: 'var(--border)',
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between py-3">
+          <div onClick={() => nav('home')} className="flex items-center gap-3 cursor-pointer group select-none">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+              style={{
+                background: 'linear-gradient(135deg, #2563EB, #00D4FF)',
+                boxShadow: '0 0 20px rgba(0, 212, 255, 0.3)',
+              }}
+            >
+              <HeartPulseIcon className="w-5 h-5 text-white" />
+            </div>
+            <span
+              className="font-extrabold text-xl tracking-tight"
+              style={{
+                background: 'linear-gradient(135deg, #FFFFFF 20%, #00D4FF 80%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              CuidaCasa
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => openAuth('login')}
+              className="btn-secondary text-xs py-2 px-4 rounded-xl"
+            >
+              Entrar
+            </button>
+            <button
+              onClick={() => openAuth('signup')}
+              className="btn-primary text-xs py-2 px-4 rounded-xl"
+            >
+              Criar Conta
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-16">
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <span className="w-8 h-8 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" />
+          </div>
+        ) : screen === 'home' ? (
+          <HomeScreen
+            professionals={professionals}
+            onSelect={(p) => { setSelectedPro(p); nav('profile'); }}
+          />
+        ) : (
+          <ProfileScreen
+            professional={selectedPro}
+            onBack={() => nav('home')}
+            onRequest={() => openAuth('signup')}
+          />
+        )}
+      </main>
+
+      {/* Barra inferior (mobile) convidando ao login */}
+      {screen === 'home' && (
+        <nav
+          className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t"
+          style={{
+            background: 'rgba(6, 10, 19, 0.95)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            borderColor: 'var(--border)',
+          }}
+        >
+          <div className="flex justify-around items-center py-2 px-3 pb-[max(8px,env(safe-area-inset-bottom))]">
+            <span className="text-[11px] text-slate-400">
+              Navegando como visitante — entre para contratar.
+            </span>
+            <button
+              onClick={() => openAuth('login')}
+              className="text-xs font-bold text-cyan-400 hover:text-cyan-300 cursor-pointer bg-transparent border-none"
+            >
+              Entrar agora
+            </button>
+          </div>
+        </nav>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════
    GATE DE AUTENTICAÇÃO (POR PAPEL)
    ════════════════════════════════════════════ */
 
@@ -2989,7 +3122,7 @@ export default function App() {
   };
 
   if (authLoading) return <FullLoader />;
-  if (!session) return <AuthScreen />;
+  if (!session) return <GuestApp />;
   if (!profile) return <FullLoader label="Carregando seu perfil..." />;
 
   if (profile.accountType === 'admin') {

@@ -15,8 +15,8 @@ function BrandIcon({ className = 'w-5 h-5' }) {
   );
 }
 
-export default function AuthScreen() {
-  const [mode, setMode] = useState('login');
+export default function AuthScreen({ initialMode = 'login', onBack }) {
+  const [mode, setMode] = useState(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,6 +59,15 @@ export default function AuthScreen() {
       style={{ background: 'var(--bg-primary)' }}
     >
       <div className="w-full max-w-md">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="mb-4 inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer bg-transparent border-none"
+          >
+            ← Voltar ao catálogo
+          </button>
+        )}
+
         {/* Logo */}
         <div className="flex flex-col items-center mb-8 text-center">
           <div
